@@ -1,0 +1,16 @@
+/* Variáveis globais, sujeito a modificações*/
+
+:root {
+  --bg-main: #212121; /* Fundo da página */
+  --bg-surface: #323232; /* Fundo de headers, cards e modais */
+
+  --accent-muted: #0d7377; /* Detalhes, ícones, hover de links */
+  --accent-vivid: #14ffec; /* Títulos principais, botões de ação, foco */
+
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0; /* Um cinza claro para descrições */
+
+  --font-main: "Inter", Helvetica, sans-serif, Arial;
+
+  --transition-fast: all 0.3s ease;
+}
