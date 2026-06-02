@@ -1,0 +1,18 @@
+{
+    "name": "calebe/backend-api",
+    "autoload": {
+        "psr-4": {
+            "Core\\": "src/Core/",
+            "Controllers\\": "src/Controllers/",
+            "Models\\": "src/Models/",
+            "Entity\\": "src/Entity/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Calebemesquita",
+            "email": "calebemesquita.13@gmail.com"
+        }
+    ],
+    "require": {}
+}
