@@ -1,23 +1,31 @@
 <?php
 
 namespace Core;
-class Request {
 
+class Request
+{
     private array $server;
     private array $get;
     private array $post;
-
-    public function __construct(array $server, array $get, array $post) {
+    /**
+     * @param array<int,mixed> $server
+     * @param array<int,mixed> $get
+     * @param array<int,mixed> $post
+     */
+    public function __construct(array $server, array $get, array $post)
+    {
         $this->server = $server;
         $this->get = $get;
         $this->post = $post;
     }
 
-    public function getMethod(): string {
+    public function getMethod(): string
+    {
         return $this->server['REQUEST_METHOD'] ?? 'GET';
     }
 
-    public function getUri(): string {
+    public function getUri(): string
+    {
         $uri = $this->server['REQUEST_URI'] ?? '/';
         $uri = strtok($uri, '?');
 
@@ -31,13 +39,13 @@ class Request {
         return $uri === '' ? '/' : $uri;
     }
 
-    public function getQuery(): array {
+    public function getQuery(): array
+    {
         return $this->get;
     }
 
-    public function getBody(): array {
+    public function getBody(): array
+    {
         return json_decode(file_get_contents("php://input"), true) ?? $this->post;
     }
 }
-
-?>

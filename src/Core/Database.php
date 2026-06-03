@@ -1,8 +1,10 @@
 <?php
+
 namespace Core;
 
 use PDO;
 use PDOException;
+use RuntimeException;
 
 class Database
 {
@@ -11,22 +13,24 @@ class Database
     // Construtor privado para evitar `new Database()` - forçando o Singleton
     private function __construct() {}
 
-    public static function getConnection(): PDO {
+    public static function getConnection(): PDO
+    {
         if (self::$instance === null) {
             try {
-                $host = getenv('DB_HOST') ?: 'db';
-                $dbname = getenv('DB_NAME') ?: 'seclab';
-                $user = getenv('DB_USER') ?: 'calebe';
-                $pass = getenv('DB_PASS');
+                $dsn = [
+                    "psql:host=%s;port=%s;dbname=%s;sslmode=%s",
+                    $_ENV['DB_HOST'],
+                    $_ENV['DB_NAME'],
+                    $_ENV['DB_USER'],
+                    $_ENV['DB_PORT'],
+                    $_ENV['DB_SSLMODE'] ?? 'required',
+                ];
 
-                $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
-
-                self::$instance = new PDO($dsn, $user, $pass, [
+                PDO::connect($dsn, $_ENV['DB_USER'], $_ENV['DB_PASS'], [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_,
                 ]);
-
             } catch (PDOException $e) {
                 die("Erro crítico: " . $e->getMessage());
             }
@@ -34,3 +38,4 @@ class Database
         return self::$instance;
     }
 }
+
