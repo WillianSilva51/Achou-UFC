@@ -158,3 +158,17 @@ ehthumbs.db
 .env
 .env.*
 !.env.example
+# cache
+.php-cs-fixer.cache
+
+# config local (se não quiser versionar)
+.php-cs-fixer.dist.php
+
+# testes locais
+testa_banco.php
+
+# composer
+/vendor/
+
+# arquivos sensíveis (se tiver)
+.env
