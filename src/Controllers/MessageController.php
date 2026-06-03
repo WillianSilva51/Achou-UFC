@@ -1,10 +1,13 @@
 <?php
+
 namespace Controllers;
 
 use Models\MessageModel;
 
-class MessageController {
-    public function index() {
+class MessageController
+{
+    public function index()
+    {
         $model = new MessageModel();
         header('Content-Type: application/json');
 

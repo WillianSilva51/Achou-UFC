@@ -17,25 +17,26 @@ class Database
     {
         if (self::$instance === null) {
             try {
-                $dsn = [
-                    "psql:host=%s;port=%s;dbname=%s;sslmode=%s",
+                $dsn = sprintf(
+                    "pgsql:host=%s;port=%s;dbname=%s;sslmode=%s",
                     $_ENV['DB_HOST'],
-                    $_ENV['DB_NAME'],
-                    $_ENV['DB_USER'],
                     $_ENV['DB_PORT'],
-                    $_ENV['DB_SSLMODE'] ?? 'required',
-                ];
+                    $_ENV['DB_NAME'], 
+                    $_ENV['DB_SSLMODE'] ?? 'require'
+                );
 
-                PDO::connect($dsn, $_ENV['DB_USER'], $_ENV['DB_PASS'], [
+                self::$instance = new PDO($dsn, $_ENV['DB_USER'], $_ENV['DB_PASS'], [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_PERSISTENT => false,
                 ]);
             } catch (PDOException $e) {
-                die("Erro crítico: " . $e->getMessage());
+                error_log('[DB_ERROR] ' . $e->getMessage());
+                //die("Erro crítico: " . $e->getMessage());
+                throw new RuntimeException('não foi possivel conetar ao banco de dados ');
             }
         }
         return self::$instance;
     }
 }
-
