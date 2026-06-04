@@ -1,0 +1,33 @@
+.img-thumbnail {
+  padding: 0.25rem;
+  background-color: var(--bs-body-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  max-width: 100%;
+  height: auto;
+}
+
+.navbar-ufc {
+  background: var(--ufc-blue);
+  border-bottom: 4px solid var(--ufc-gold);
+}
+.navbar-ufc .navbar-brand,
+.navbar-ufc .nav-link {
+  color: #fff !important;
+}
+.navbar-ufc .nav-link:hover {
+  color: var(--ufc-gold) !important;
+}
+.navbar-ufc .brand-logo {
+  height: 38px;
+  background: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.brand-title {
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.brand-title .accent {
+  color: var(--ufc-gold);
+}

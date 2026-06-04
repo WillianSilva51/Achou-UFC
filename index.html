@@ -19,18 +19,39 @@
         rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/sections/nav.css">
+    <link rel="stylesheet" href="css/components/main.css">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/global.css">
     <title>Achou! UFC</title>
 </head>
 
 <body>
-    <header></header>
-    <main>
-        <h1>Achou! UFC</h1>
-        <p>Hello World</p>
-    </main>
-    <footer></footer>
+    <nav class="navbar navbar-dark navbar-expand-lg navbar-ufc">
+        <div class="container">
+            <a href="#" class="navbar-brand d-flex align-items-center gap-2">
+                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" class="brand-logo" alt="Logo da UFC">
+                <span class="brand-title">Achou! <span class="accent"> UFC</span></span>
+            </a>
+            <button class="navbar-toggler">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto align-items-center gap-lg-3">
+                    <li class="nav-item"><a href="#vitrine" class="nav-link active"><i class="bi bi-grid-3x3-gap"></i>
+                            Vitrine</a></li>
+                    <li><a href="#como-funciona" class="nav-link active"><i class="bi bi-info-circle"></i> Como
+                            Funciona</a></li>
+                    <li><a href="login.html" class="nav-link active"><i class="bi bi-shield-lock"></i> Área da
+                            Recepção</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <header>
+
+    </header>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>
