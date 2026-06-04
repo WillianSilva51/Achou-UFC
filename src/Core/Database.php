@@ -8,35 +8,29 @@ use RuntimeException;
 
 class Database
 {
-    private static ?PDO $instance = null;
-
-    // Construtor privado para evitar `new Database()` - forçando o Singleton
-    private function __construct() {}
+    private static ?PDO $connection = null;
 
     public static function getConnection(): PDO
     {
-        if (self::$instance === null) {
+        if (self::$connection === null) {
             try {
-                $dsn = sprintf(
-                    "pgsql:host=%s;port=%s;dbname=%s;sslmode=%s",
-                    $_ENV['DB_HOST'],
-                    $_ENV['DB_PORT'],
-                    $_ENV['DB_NAME'], 
-                    $_ENV['DB_SSLMODE'] ?? 'require'
-                );
+                $host = $_ENV['DB_HOST'];
+                $port = $_ENV['DB_PORT'] ?? '5432';
+                $db   = $_ENV['DB_NAME'];
+                $user = $_ENV['DB_USER'];
+                $pass = $_ENV['DB_PASS'];
+                $ssl  = $_ENV['DB_SSLMODE'] ?? 'require';
 
-                self::$instance = new PDO($dsn, $_ENV['DB_USER'], $_ENV['DB_PASS'], [
+                $dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=$ssl";
+
+                self::$connection = new PDO($dsn, $user, $pass, [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                    PDO::ATTR_PERSISTENT => false,
                 ]);
             } catch (PDOException $e) {
-                error_log('[DB_ERROR] ' . $e->getMessage());
-                //die("Erro crítico: " . $e->getMessage());
-                throw new RuntimeException('não foi possivel conetar ao banco de dados ');
+                die("Erro crítico de BD: " . $e->getMessage());
             }
         }
-        return self::$instance;
+        return self::$connection;
     }
 }

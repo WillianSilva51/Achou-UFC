@@ -7,11 +7,7 @@ class Request
     private array $server;
     private array $get;
     private array $post;
-    /**
-     * @param array<int,mixed> $server
-     * @param array<int,mixed> $get
-     * @param array<int,mixed> $post
-     */
+
     public function __construct(array $server, array $get, array $post)
     {
         $this->server = $server;
@@ -49,3 +45,4 @@ class Request
         return json_decode(file_get_contents("php://input"), true) ?? $this->post;
     }
 }
+
