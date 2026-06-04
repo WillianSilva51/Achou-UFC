@@ -7,12 +7,12 @@ use Middlewares\AuthMiddleware;
 use Models\Categoria;
 use Exception;
 
-class ItenController
+class ItemController
 {
     public function criarCategoria(Request $request): void
     {
 
-        header('Content-Type application/json');
+        header('Content-Type: application/json');
 
         $usuarioLogado = AuthMiddleware::handle();
 

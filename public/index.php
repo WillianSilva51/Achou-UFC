@@ -11,7 +11,7 @@ $dotenv->load();
 use Core\Request;
 use Core\Router;
 use Controllers\AuthController;
-use Controllers\ItenController;
+use Controllers\ItemController;
 
 $request = new Request($_SERVER, $_GET, $_POST);
 $router = new Router($request);
@@ -23,7 +23,7 @@ $router->get('/', function () {
 
 $router->post('/api/register', [AuthController::class, 'register']);
 $router->post('/api/login', [AuthController::class, 'login']);
-$router->post('/api/categorias', [ItenController::class, 'criarCategoria']);
+$router->post('/api/categorias', [ItemController::class, 'criarCategoria']);
 // ROTA REAL
 //$router->get('/messages', [\Controllers\MessageController::class, 'index']);
 

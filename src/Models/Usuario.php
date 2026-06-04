@@ -10,7 +10,7 @@ class Usuario extends BaseModel
     protected string $table = 'usuario';
     public function findbyEmail(string $email): ?array
     {
-        $query = "SELECT id, nome, email, role FROM {$this->table} WHERE email = :email";
+        $query = "SELECT id, nome, email, senha,role FROM {$this->table} WHERE email = :email";
         $stmt = $this->db->prepare($query);
         $stmt->execute([
             'email' => $email,
