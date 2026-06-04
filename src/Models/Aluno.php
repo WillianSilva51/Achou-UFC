@@ -6,7 +6,7 @@ use Models\BaseModel;
 
 class Aluno extends BaseModel
 {
-    protected $table = 'aluno';
+    protected string $table = 'aluno';
 
     public function create(string $aluno_id, string $matricula): bool
     {

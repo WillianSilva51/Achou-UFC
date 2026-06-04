@@ -50,7 +50,7 @@ class AuthController
             return;
         }
 
-        if (empty($senha) || $senha < 8) {
+        if(empty($senha) || strlen($senha) < 8) {
             http_response_code(400);
             echo json_encode([
                 'Error' => 'Senha deve ter no minimo 8 digitos',
@@ -96,14 +96,15 @@ class AuthController
                 'error' => 'Conflito de dados, email ou siap ja cadastrados',
             ]);
             error_log('Error de BD no registro ' . $e->getMessage());
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            http_response_code(400);
+        }  catch (PDOException $e) {
+ $pdo->rollBack();
+    http_response_code(400);
 
-            echo json_encode([
-                'error' => $e->getMessage(),
-            ]);
-        }
+    // Agora o Nginx/PHP vai te fofocar o erro exato do banco no seu curl
+    echo json_encode([
+        'error' => 'Erro no BD: ' . $e->getMessage(),
+    ]);
+}
     }
 
     public function login(Request $request): void

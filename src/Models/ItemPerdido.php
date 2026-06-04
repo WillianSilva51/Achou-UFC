@@ -5,9 +5,9 @@ namespace Models;
 use Models\BaseModel;
 use PDO;
 
-class ItenPerdido extends BaseModel
+class ItemPerdido extends BaseModel
 {
-    protected string $table = 'iten_perdido';
+    protected string $table = 'item_perdido';
 
     public function create(string $titulo, string $descricao, string $data_encontrado, ?string $foto_url, int $local_id, int $categoria_id, int $registrado_por): int
     {
