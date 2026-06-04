@@ -9,4 +9,11 @@
 html {
   font-family: var(--font-main);
   scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+}
+
+html,
+body {
+  height: 100%;
 }

@@ -4,6 +4,7 @@ namespace Core;
 
 use PDO;
 use PDOException;
+use RuntimeException;
 
 class Database
 {

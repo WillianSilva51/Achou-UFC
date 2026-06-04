@@ -1,0 +1,33 @@
+:root {
+  --ufc-blue: #003b71;
+  --ufc-blue-dark: #002951;
+  --ufc-gold: #fcb827;
+  --ufc-green: #1f7a3a;
+  --ufc-bg: #f6f7fb;
+  --font-main: "Inter", Helvetica, sans-serif, Arial;
+
+  --bs-primary: var(--ufc-blue);
+  --bs-primary-rgb: 0, 59, 113;
+
+  --bs-success: var(--ufc-green);
+  --bs-warning: var(--ufc-gold);
+  --bs-body-bg: var(--ufc-bg);
+  --bs-body-font-family: var(--font-main);
+}
+
+.bg-ufc-blue {
+  background-color: var(--ufc-blue) !important;
+}
+.bg-ufc-blue-dark {
+  background-color: var(--ufc-blue-dark) !important;
+}
+.bg-ufc-gold {
+  background-color: var(--ufc-gold) !important;
+}
+
+.text-ufc-blue {
+  color: var(--ufc-blue) !important;
+}
+.text-ufc-gold {
+  color: var(--ufc-gold) !important;
+}

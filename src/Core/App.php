@@ -12,4 +12,3 @@ $app->router->get('/messages', [\Controllers\MessageController::class, 'index'])
 
 $app->run();
 
-?>
