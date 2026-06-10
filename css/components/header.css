@@ -1,0 +1,20 @@
+.hero {
+  padding: 3rem 0 2.5rem;
+  color: white;
+  background: linear-gradient(
+    135deg,
+    var(--ufc-blue) 0%,
+    var(--ufc-blue-dark) 100%
+  );
+  border-bottom: 4px solid var(--ufc-gold);
+}
+
+.hero h1 {
+  font-weight: 800;
+}
+
+.hero .bagde-campus {
+  background-color: var(--ufc-gold);
+  font-weight: 600;
+  color: black;
+}
