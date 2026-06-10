@@ -29,7 +29,6 @@ abstract class BaseModel
         $stmt->execute(['id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     }
-
     public function delete(int $id): bool
     {
         $stmt = $this->db->prepare("DELETE FROM {$this->table} WHERE id = :id");

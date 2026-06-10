@@ -3,6 +3,7 @@
 namespace Models;
 
 use Models\BaseModel;
+use PDO;
 
 class Local extends BaseModel
 {
@@ -17,5 +18,15 @@ class Local extends BaseModel
             'descricao' => $descricao,
         ]);
         return (int) $stmt->fetchColumn();
+    }
+
+    public function findAll(): array
+    {
+        $sql = "SELECT id, nome_local, descricao FROM {$this->table} ORDER BY nome_local ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $resultado ?: [];
     }
 }
