@@ -24,7 +24,8 @@ $router->get('/', function () {
 
 $router->post('/api/register', [AuthController::class, 'register']);
 $router->post('/api/login', [AuthController::class, 'login']);
-$router->post('/api/categorias', [ItemController::class, 'criarCategoria']);
+$router->post('/api/itens', [ItemController::class, 'store']);
+$router->get('/api/itens', [ItemController::class, 'index']);
 $router->post('/api/locais', [LocalController::class, 'createLocal']);
 $router->get('/api/locais', [LocalController::class, 'listLocal']);
 
