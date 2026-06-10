@@ -13,6 +13,7 @@ use Core\Router;
 use Controllers\AuthController;
 use Controllers\ItemController;
 use Controllers\LocalController;
+use Controllers\CategoriaController;
 
 $request = new Request($_SERVER, $_GET, $_POST);
 $router = new Router($request);
@@ -28,7 +29,8 @@ $router->post('/api/itens', [ItemController::class, 'store']);
 $router->get('/api/itens', [ItemController::class, 'index']);
 $router->post('/api/locais', [LocalController::class, 'createLocal']);
 $router->get('/api/locais', [LocalController::class, 'listLocal']);
-
+$router->post('/api/categorias', [CategoriaController::class, 'store']);
+$router->get('/api/categorias', [CategoriaController::class, 'index']);
 
 // ROTA REAL
 //$router->get('/messages', [\Controllers\MessageController::class, 'index']);

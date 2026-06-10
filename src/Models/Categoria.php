@@ -18,4 +18,13 @@ class Categoria extends BaseModel
 
         return (int) $stmt->fetchColumn();
     }
+
+    public function findAll(): array
+    {
+        $sql = "SELECT id, nome FROM {$this->table} ORDER BY nome ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $resultado = $stmt->fetchColumn();
+        return $resultado ?: [];
+    }
 }
