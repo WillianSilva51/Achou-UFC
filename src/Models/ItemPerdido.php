@@ -21,7 +21,7 @@ class ItemPerdido extends BaseModel
             'titulo' => $titulo,
             'descricao' => $descricao,
             'data_encontrado' => $data_encontrado,
-            'status' => 'disponivel',
+            'status' => $status,
             'foto_url' => $foto_url,
             'local_id' => $local_id,
             'categoria_id' => $categoria_id,
@@ -31,7 +31,7 @@ class ItemPerdido extends BaseModel
     }
     public function findAllWithDetails(): array
     {
-        $sql = "SELECT i.id, i.titulo, i.descricao, i.data_encontrado i.status ,i.foto_url, 
+        $sql = "SELECT i.id, i.titulo, i.descricao, i.data_encontrado, i.status ,i.foto_url, 
                        c.nome as categoria, l.nome_local as local, u.nome as registrado_por
                 FROM {$this->table} i
                 INNER JOIN categoria c ON i.categoria_id = c.id
