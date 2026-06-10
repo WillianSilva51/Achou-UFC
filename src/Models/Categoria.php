@@ -3,6 +3,7 @@
 namespace Models;
 
 use Models\BaseModel;
+use PDO;
 
 class Categoria extends BaseModel
 {
@@ -24,7 +25,7 @@ class Categoria extends BaseModel
         $sql = "SELECT id, nome FROM {$this->table} ORDER BY nome ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
-        $resultado = $stmt->fetchColumn();
+        $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $resultado ?: [];
     }
 }

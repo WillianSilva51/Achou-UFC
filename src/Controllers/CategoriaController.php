@@ -11,7 +11,7 @@ class CategoriaController
 {
     public function store(Request $request): void
     {
-        header('Content-Type application/json');
+        header('Content-Type: application/json');
 
         $usuarioLogado = AuthMiddleware::handle();
 
@@ -53,11 +53,11 @@ class CategoriaController
 
     public function index(Request $request): void
     {
-        header('Content-Type application/json');
+        header('Content-Type: application/json');
 
-        $CategoriaModel = new Categoria();
+        $categoriaModel = new Categoria();
         try {
-            $categorias = CategoriaModel->findAll();
+            $categorias = $categoriaModel->findAll();
 
             http_response_code(200);
             echo json_encode([

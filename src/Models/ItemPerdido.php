@@ -9,7 +9,7 @@ class ItemPerdido extends BaseModel
 {
     protected string $table = 'item_perdido';
 
-    public function create(string $titulo, string $descricao, string $data_encontrado, string $status, ?string $foto_url, int $local_id, int $categoria_id, int $registrado_por): int
+    public function create(string $titulo, string $descricao, string $data_encontrado, ?string $foto_url, int $local_id, int $categoria_id, int $registrado_por, string $status = 'disponível'): int
     {
         $sql = "INSERT INTO {$this->table}
           (titulo, descricao, data_encontrado, status, foto_url, local_id, categoria_id, registrado_por)
