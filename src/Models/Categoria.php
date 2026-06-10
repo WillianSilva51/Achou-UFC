@@ -3,6 +3,7 @@
 namespace Models;
 
 use Models\BaseModel;
+use PDO;
 
 class Categoria extends BaseModel
 {
@@ -17,5 +18,14 @@ class Categoria extends BaseModel
         ]);
 
         return (int) $stmt->fetchColumn();
+    }
+
+    public function findAll(): array
+    {
+        $sql = "SELECT id, nome FROM {$this->table} ORDER BY nome ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $resultado ?: [];
     }
 }
