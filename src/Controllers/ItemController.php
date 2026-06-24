@@ -93,6 +93,8 @@ class ItemController
     public function index(Request $request): void
     {
         header('Content-Type: application/json');
+        
+        AuthMiddleware::handle();
 
         $query = $request->getQuery();
         
@@ -150,6 +152,8 @@ class ItemController
     {
         header('Content-Type: application/json');
 
+        AuthMiddleware::handle();
+
         $itemModel = new ItemPerdido();
 
         try {
@@ -173,7 +177,6 @@ class ItemController
         }
     }
 
-   
     public function update(Request $request, int $id): void
     {
         header('Content-Type: application/json');
@@ -216,7 +219,7 @@ class ItemController
                 echo json_encode(['error' => 'A URL da foto é inválida.']);
                 return;
             }
-            // ajeitar aqui dps nos testes de produçãoooooo
+            
             $esquema = parse_url($url_limpa, PHP_URL_SCHEME);
             if (!in_array(strtolower($esquema ?? ''), ['http', 'https'])) {
                 http_response_code(400);
@@ -289,7 +292,4 @@ class ItemController
              echo json_encode(['error' => 'Erro ao remover item.']);
         }
     }
-
-    
-    
 }

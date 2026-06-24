@@ -21,10 +21,15 @@ abstract class BaseModel
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['id' => $id]);
         
-        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        return $resultado !== false ? $resultado : null;
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result && isset($result['senha'])) {
+            unset($result['senha']);
+        }
+
+        return $result;
     }
+    
 
     public function softDelete(int $id): bool
     {

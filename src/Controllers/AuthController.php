@@ -14,6 +14,9 @@ class AuthController
 {
     public function register(Request $request): void
     {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        \Core\RateLimiter::check($ip, 'register', 3, 300);
+
         header('Content-Type: application/json');
 
         $dados = $request->getBody();
@@ -88,7 +91,7 @@ class AuthController
                 $pdo->rollBack();
             }
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode(['error' => 'Nao encontrado']);
         }
     }
 
