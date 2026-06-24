@@ -12,11 +12,9 @@ abstract class BaseModel
 
     public function __construct()
     {
-        // Garante que toda classe filha já nasça conectada no banco
         $this->db = Database::getConnection();
     }
 
-    // Busca cega por ID (Serve para Local, Categoria, Item...)
     public function findById(int $id): ?array
     {
         $sql = "SELECT * FROM {$this->table} WHERE id = :id LIMIT 1";
@@ -28,12 +26,19 @@ abstract class BaseModel
         return $resultado !== false ? $resultado : null;
     }
 
-    // Deleta por ID (Serve para Local, Categoria, Item...)
     public function delete(int $id): bool
     {
         $sql = "DELETE FROM {$this->table} WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         
         return $stmt->execute(['id' => $id]);
+    }
+
+    public function countAll(): int
+    {
+        $sql = "SELECT COUNT(id) FROM {$this->table}";
+        $stmt = $this->db->query($sql);
+        
+        return (int) $stmt->fetchColumn();
     }
 }

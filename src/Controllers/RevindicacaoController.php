@@ -52,20 +52,8 @@ class ReivindicacaoController
             }
 
             $data_reivindicacao = date('Y-m-d H:i:s');
-            $status_inicial = 'pendente';
-
-            $id_reivindicacao = $reivindicacaoModel->create($status_inicial, $data_reivindicacao, $item_id, $aluno_id);
-
-            $itemModel->update(
-                $item_id, 
-                $item['titulo'], 
-                $item['descricao'], 
-                $item['data_encontrado'], 
-                $item['foto_url'], 
-                $item['local_id'], 
-                $item['categoria_id'], 
-                'em_analise'
-            );
+            
+            $id_reivindicacao = $reivindicacaoModel->registrarPedido($item_id, $aluno_id, $data_reivindicacao);
 
             http_response_code(201);
             echo json_encode([
@@ -76,14 +64,13 @@ class ReivindicacaoController
 
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno ao processar reivindicação.']);
+            echo json_encode(['error' => 'Erro interno ao processar reivindicação: ' . $e->getMessage()]);
         }
     }
 
     public function index(Request $request): void
     {
         header('Content-Type: application/json');
-
         $usuarioLogado = AuthMiddleware::handle();
 
         if ($usuarioLogado->role !== 'admin') {
@@ -92,15 +79,40 @@ class ReivindicacaoController
             return;
         }
 
+        $query = $request->getQuery();
+        
+        $page  = isset($query['page']) ? (int) $query['page'] : 1;
+        $limit = isset($query['limit']) ? (int) $query['limit'] : 20;
+
+        if ($page < 1) $page = 1;
+        if ($limit < 1 || $limit > 100) $limit = 20;
+        
+        $offset = ($page - 1) * $limit;
+
+        $filtros = [];
+        if (!empty($query['status_reivindicacao'])) {
+            $filtros['status_reivindicacao'] = htmlspecialchars(strip_tags($query['status_reivindicacao']));
+        }
+        if (!empty($query['aluno_id'])) {
+            $filtros['aluno_id'] = (int) $query['aluno_id'];
+        }
+
         $reivindicacaoModel = new Reivindicacao();
 
         try {
-            $reivindicacoes = $reivindicacaoModel->findAllWithDetails();
+            $total = $reivindicacaoModel->countFiltered($filtros);
+            $reivindicacoes = $reivindicacaoModel->findAllWithDetails($limit, $offset, $filtros);
 
             http_response_code(200);
             echo json_encode([
-                'sucesso' => true,
-                'total' => count($reivindicacoes),
+                'sucesso'   => true,
+                'paginacao' => [
+                    'total_registros'   => $total,
+                    'pagina_atual'      => $page,
+                    'limite_por_pagina' => $limit,
+                    'total_paginas'     => ceil($total / $limit)
+                ],
+                'filtros_aplicados' => $filtros,
                 'data' => $reivindicacoes
             ]);
         } catch (Exception $e) {
@@ -138,7 +150,6 @@ class ReivindicacaoController
         }
 
         $reivindicacaoModel = new Reivindicacao();
-        $itemModel = new ItemPerdido();
 
         try {
             $reivindicacao = $reivindicacaoModel->findById($id);
@@ -149,23 +160,10 @@ class ReivindicacaoController
                 return;
             }
 
-            $reivindicacaoModel->updateStatus($id, $novo_status);
-
             $item_id = $reivindicacao['item_id'];
-            $item = $itemModel->findById($item_id);
-
             $status_item = ($novo_status === 'aprovado') ? 'devolvido' : 'disponível';
-
-            $itemModel->update(
-                $item_id, 
-                $item['titulo'], 
-                $item['descricao'], 
-                $item['data_encontrado'], 
-                $item['foto_url'], 
-                $item['local_id'], 
-                $item['categoria_id'], 
-                $status_item
-            );
+            
+            $reivindicacaoModel->processarAvaliacao($id, $novo_status, $item_id, $status_item);
 
             http_response_code(200);
             echo json_encode([
@@ -175,7 +173,7 @@ class ReivindicacaoController
 
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno ao processar a avaliação.']);
+            echo json_encode(['error' => 'Erro interno ao processar a avaliação: ' . $e->getMessage()]);
         }
     }
 }

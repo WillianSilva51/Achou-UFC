@@ -59,48 +59,57 @@ class ItemController
 
     public function index(Request $request): void
     {
-        header('Content-Type application/json');
+        header('Content-Type: application/json');
+
+        $query = $request->getQuery();
+        
+        $page  = isset($query['page']) ? (int) $query['page'] : 1;
+        $limit = isset($query['limit']) ? (int) $query['limit'] : 20;
+
+        if ($page < 1) $page = 1;
+        if ($limit < 1 || $limit > 100) $limit = 20;
+        
+        $offset = ($page - 1) * $limit;
+
+        $filtros = [];
+        
+        if (!empty($query['status'])) {
+            $filtros['status'] = htmlspecialchars(strip_tags($query['status']));
+        }
+        
+        if (!empty($query['categoria_id'])) {
+            $filtros['categoria_id'] = (int) $query['categoria_id'];
+        }
+        
+        if (!empty($query['local_id'])) {
+            $filtros['local_id'] = (int) $query['local_id'];
+        }
+        
+        if (!empty($query['busca'])) {
+            $filtros['busca'] = htmlspecialchars(strip_tags($query['busca']));
+        }
 
         $itemModel = new ItemPerdido();
 
         try {
-            $itens = $itemModel->findAllWithDetails();
+            $total = $itemModel->countFiltered($filtros);
+            $itens = $itemModel->findAllWithDetails($limit, $offset, $filtros);
+
             http_response_code(200);
             echo json_encode([
-                'sucesso' => true,
-                'total' => count($itens),
+                'sucesso'   => true,
+                'paginacao' => [
+                    'total_registros'   => $total,
+                    'pagina_atual'      => $page,
+                    'limite_por_pagina' => $limit,
+                    'total_paginas'     => ceil($total / $limit)
+                ],
+                'filtros_aplicados' => $filtros, 
                 'data' => $itens,
             ]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno bolado que não é pra mostrar: ' . $e->getMessage()]);
-        }
-    }
-
-    public function show(Request $request, int $id): void
-    {
-        header('Content-Type: application/json');
-        
-        $itemModel = new ItemPerdido();
-
-        try {
-            // Vem de graça lá do BaseModel
-            $item = $itemModel->findById($id);
-
-            if (!$item) {
-                http_response_code(404);
-                echo json_encode(['error' => 'Item não encontrado']);
-                return;
-            }
-
-            http_response_code(200);
-            echo json_encode([
-                'sucesso' => true,
-                'data' => $item
-            ]);
-        } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Erro interno ao buscar item']);
+            echo json_encode(['error' => 'Erro interno ao listar itens: ' . $e->getMessage()]);
         }
     }
 
@@ -148,7 +157,6 @@ class ItemController
         }
     }
 
-    // O 'D' do CRUD: Deletar
     public function destroy(Request $request, int $id): void
     {
         header('Content-Type: application/json');
@@ -178,5 +186,7 @@ class ItemController
              echo json_encode(['error' => 'Erro ao deletar: ' . $e->getMessage()]);
         }
     }
+
+    
     
 }

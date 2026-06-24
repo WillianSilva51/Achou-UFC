@@ -64,14 +64,64 @@ class Usuario extends BaseModel
         ]);
     }
 
-    public function findAll(): array
+    private function buildWhereClause(array $filtros): array
     {
-        $sql = "SELECT id, nome, email, role FROM {$this->table} ORDER BY nome ASC";
+        $where = [];
+        $binds = [];
+
+        // Filtra pelo tipo de conta (admin ou aluno)
+        if (!empty($filtros['role'])) {
+            $where[] = "role = :role";
+            $binds[':role'] = $filtros['role'];
+        }
+
+        // Permite pesquisar um pedaço do nome ou do email
+        if (!empty($filtros['busca'])) {
+            $where[] = "(nome LIKE :busca OR email LIKE :busca)";
+            $binds[':busca'] = '%' . $filtros['busca'] . '%';
+        }
+
+        $sqlWhere = count($where) > 0 ? " WHERE " . implode(" AND ", $where) : "";
+        
+        return ['sql' => $sqlWhere, 'binds' => $binds];
+    }
+
+    public function countFiltered(array $filtros = []): int
+    {
+        $whereData = $this->buildWhereClause($filtros);
+        
+        $sql = "SELECT COUNT(id) FROM {$this->table}" . $whereData['sql'];
+        
         $stmt = $this->db->prepare($sql);
+        $stmt->execute($whereData['binds']);
+        
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function findAll(int $limit = 20, int $offset = 0, array $filtros = []): array
+    {
+        $whereData = $this->buildWhereClause($filtros);
+
+        $sql = "SELECT id, nome, email, role FROM {$this->table}" 
+               . $whereData['sql'] . 
+               " ORDER BY nome ASC LIMIT :limit OFFSET :offset";
+                
+        $stmt = $this->db->prepare($sql);
+
+        foreach ($whereData['binds'] as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         
         $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         return $resultado ?: [];
     }
+
+    
+
+
 }

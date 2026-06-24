@@ -12,7 +12,6 @@ class UsuarioController
     public function index(Request $request): void
     {
         header('Content-Type: application/json');
-        
         $usuarioLogado = AuthMiddleware::handle();
 
         if ($usuarioLogado->role !== 'admin') {
@@ -21,16 +20,41 @@ class UsuarioController
             return;
         }
 
+        $query = $request->getQuery();
+        
+        $page  = isset($query['page']) ? (int) $query['page'] : 1;
+        $limit = isset($query['limit']) ? (int) $query['limit'] : 20;
+
+        if ($page < 1) $page = 1;
+        if ($limit < 1 || $limit > 100) $limit = 20;
+
+        $offset = ($page - 1) * $limit;
+
+        $filtros = [];
+        if (!empty($query['role'])) {
+            $filtros['role'] = htmlspecialchars(strip_tags($query['role']));
+        }
+        if (!empty($query['busca'])) {
+            $filtros['busca'] = htmlspecialchars(strip_tags($query['busca']));
+        }
+
         $usuarioModel = new Usuario();
 
         try {
-            $usuarios = $usuarioModel->findAll();
+            $total = $usuarioModel->countFiltered($filtros);
+            $usuarios = $usuarioModel->findAll($limit, $offset, $filtros);
             
             http_response_code(200);
             echo json_encode([
-                'sucesso' => true,
-                'total'   => count($usuarios),
-                'data'    => $usuarios,
+                'sucesso'   => true,
+                'paginacao' => [
+                    'total_registros'   => $total,
+                    'pagina_atual'      => $page,
+                    'limite_por_pagina' => $limit,
+                    'total_paginas'     => ceil($total / $limit)
+                ],
+                'filtros_aplicados' => $filtros,
+                'data' => $usuarios,
             ]);
         } catch (Exception $e) {
             http_response_code(500);
