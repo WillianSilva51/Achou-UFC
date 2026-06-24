@@ -28,7 +28,11 @@ class Database
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 ]);
             } catch (PDOException $e) {
-                die("Erro crítico de BD: " . $e->getMessage());
+                error_log("Falha na conexão com o banco: " . $e->getMessage());
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['error' => 'Erro interno de conexão com o banco de dados.']);
+                exit;
             }
         }
         return self::$connection;

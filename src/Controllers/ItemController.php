@@ -115,7 +115,35 @@ class ItemController
             ]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno ao listar itens: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro interno ao listar itens.']);
+        }
+    }
+
+    public function show(Request $request, int $id): void
+    {
+        header('Content-Type: application/json');
+
+        $itemModel = new ItemPerdido();
+
+        try {
+            // Busca o item pelo ID
+            $item = $itemModel->findById($id);
+
+            if (!$item) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Item não encontrado.']);
+                return;
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'sucesso' => true,
+                'data' => $item
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao buscar detalhes do item.']);
         }
     }
 

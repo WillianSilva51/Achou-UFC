@@ -77,7 +77,7 @@ class CategoriaController
             ]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['Error' => 'Erro ao listar categorias' . $e->getMessage()]);
+            echo json_encode(['Error' => 'Erro interno ao listar categorias.']);
         }
     }
     public function show(Request $request, int $id): void
@@ -120,7 +120,6 @@ class CategoriaController
 
         $dados = $request->getBody();
 
-        // 🛡️ WHITE-LISTING E SANITIZAÇÃO
         $nome = !empty($dados['nome']) ? htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8') : '';
 
         if (empty($nome)) {

@@ -73,7 +73,7 @@ class LocalController
             ]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro ao buscar locais: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro interno ao buscar locais.']);
         }
     }
     public function show(Request $request, int $id): void
