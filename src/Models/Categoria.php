@@ -22,7 +22,7 @@ class Categoria extends BaseModel
 
     public function findAll(): array
     {
-        $sql = "SELECT id, nome FROM {$this->table} ORDER BY nome ASC";
+        $sql = "SELECT id, nome FROM {$this->table} WHERE ativo = TRUE ORDER BY nome ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);

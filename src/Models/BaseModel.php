@@ -26,6 +26,14 @@ abstract class BaseModel
         return $resultado !== false ? $resultado : null;
     }
 
+    public function softDelete(int $id): bool
+    {
+        $sql = "UPDATE {$this->table} SET ativo = FALSE WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        
+        return $stmt->execute(['id' => $id]);
+    }
+
     public function delete(int $id): bool
     {
         $sql = "DELETE FROM {$this->table} WHERE id = :id";

@@ -161,7 +161,7 @@ class CategoriaController
                 return;
             }
 
-            $categoriaModel->delete($id);
+            $categoriaModel->softDelete($id);
 
             http_response_code(200);
             echo json_encode(['sucesso' => true, 'message' => 'Categoria deletada com sucesso']);

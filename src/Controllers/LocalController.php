@@ -160,7 +160,7 @@ class LocalController
                 return;
             }
 
-            $localModel->delete($id);
+            $localModel->softDelete($id);
 
             http_response_code(200);
             echo json_encode(['sucesso' => true, 'message' => 'Local deletado com sucesso']);
