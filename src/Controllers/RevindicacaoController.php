@@ -62,9 +62,20 @@ class ReivindicacaoController
                 'id_reivindicacao' => $id_reivindicacao
             ]);
 
-        } catch (Exception $e) {
+        } catch (\PDOException $e) {
+            if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_reivindicacao_ativa') !== false) {
+                http_response_code(409);
+                echo json_encode([
+                    'error' => 'Calma lá! Você já enviou uma reivindicação para este item e ela está em análise.'
+                ]);
+                return;
+            }
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno ao processar reivindicação: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro no banco de dados ao processar reivindicação.']);
+            
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
 

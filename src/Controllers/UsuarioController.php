@@ -109,9 +109,17 @@ class UsuarioController
             } else {
                 throw new Exception("Falha ao atualizar ou nenhuma alteração foi feita.");
             }
-        } catch (Exception $e) {
+        } catch (\PDOException $e) {
+            if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_usuario_email') !== false) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Este e-mail já está sendo utilizado por outro usuário.']);
+                return;
+            }
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao atualizar usuário.']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno: ' . $e->getMessage()]);
         }
     }
 
@@ -129,18 +137,24 @@ class UsuarioController
 
         $dados = $request->getBody();
 
-        if (empty($dados['nova_senha']) || strlen($dados['nova_senha']) < 8) {
+        if (empty($dados['senha_atual']) || empty($dados['nova_senha']) || strlen($dados['nova_senha']) < 8) {
             http_response_code(400);
-            echo json_encode(['error' => 'A nova senha é obrigatória e deve ter no mínimo 8 caracteres.']);
+            echo json_encode(['error' => 'A senha atual e a nova senha (mínimo 8 caracteres) são obrigatórias.']);
             return;
         }
 
-        $nova_senha = $dados['nova_senha'];
         $usuarioModel = new Usuario();
 
         try {
-            $sucesso = $usuarioModel->updatePassword($id, $nova_senha);
+            $user = $usuarioModel->findById($id);
+            
+            if (!$user || !password_verify($dados['senha_atual'], $user['senha'])) {
+                http_response_code(401);
+                echo json_encode(['error' => 'A senha atual está incorreta.']);
+                return;
+            }
 
+            $sucesso = $usuarioModel->updatePassword($id, $dados['nova_senha']);
             if ($sucesso) {
                 http_response_code(200);
                 echo json_encode(['sucesso' => true, 'mensagem' => 'Senha atualizada com sucesso.']);

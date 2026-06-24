@@ -82,14 +82,30 @@ class AuthController
                 'error' => 'Conflito de dados: Email, Matrícula ou SIAPE já cadastrados.',
                 'debug' => $e->getMessage() 
             ]);
+        }  catch (\PDOException $e) {
+            $pdo->rollBack();
+            http_response_code(409); // 409 Conflict
+            
+            $mensagem = 'Erro de conflito de dados no banco.';
+            
+            // Lendo exatamente o nome da constraint que você criou
+            if (strpos($e->getMessage(), 'uq_usuario_email') !== false) {
+                $mensagem = 'Este e-mail já está cadastrado no sistema.';
+            } elseif (strpos($e->getMessage(), 'uq_aluno_matricula') !== false) {
+                $mensagem = 'Esta matrícula já está associada a outro aluno.';
+            } elseif (strpos($e->getMessage(), 'uq_admin_siap') !== false) {
+                $mensagem = 'Este SIAPE já está cadastrado no sistema.';
+            }
+
+            echo json_encode(['error' => $mensagem]);
+            error_log('Erro de BD no registro: ' . $e->getMessage());
+            
         } catch (Exception $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
             http_response_code(400);
-            echo json_encode([
-                'error' => $e->getMessage()
-            ]);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
 

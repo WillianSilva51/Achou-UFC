@@ -117,25 +117,26 @@ class LocalController
         $descricao = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao'])) : '';
 
         $localModel = new Local();
-
         try {
-            if (!$localModel->findById($id)) {
-                http_response_code(404);
-                echo json_encode(['error' => 'Local não encontrado para atualização']);
-                return;
-            }
-
             $sucesso = $localModel->update($id, $nome_local, $descricao);
 
             if ($sucesso) {
                 http_response_code(200);
-                echo json_encode(['sucesso' => true, 'message' => 'Local atualizado com sucesso']);
+                echo json_encode(['sucesso' => true, 'mensagem' => 'Local atualizado com sucesso.']);
             } else {
-                throw new Exception("Nenhuma alteração foi feita ou falha no banco.");
+                throw new Exception("Falha ao atualizar ou nenhuma alteração foi feita.");
             }
+        } catch (\PDOException $e) {
+            if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_local_nome') !== false) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe outro local cadastrado com este nome.']);
+                return;
+            }
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao atualizar local.']);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['erro' => 'Erro interno ao atualizar o local']);
+            echo json_encode(['error' => 'Erro interno: ' . $e->getMessage()]);
         }
     }
 

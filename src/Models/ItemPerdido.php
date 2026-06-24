@@ -73,6 +73,8 @@ class ItemPerdido extends BaseModel
         if (!empty($filtros['status'])) {
             $where[] = "i.status = :status";
             $binds[':status'] = $filtros['status'];
+        } else {
+            $where[] = "i.status != 'arquivado'";
         }
 
         if (!empty($filtros['categoria_id'])) {

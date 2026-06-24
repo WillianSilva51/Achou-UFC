@@ -164,7 +164,7 @@ class ItemController
 
         if ($usuarioLogado->role !== 'admin') {
             http_response_code(403);
-            echo json_encode(['error' => 'Acesso negado']);
+            echo json_encode(['error' => 'Acesso negado.']);
             return;
         }
 
@@ -173,17 +173,17 @@ class ItemController
         try {
              if (!$itemModel->findById($id)) {
                 http_response_code(404);
-                echo json_encode(['error' => 'Item não encontrado']);
+                echo json_encode(['error' => 'Item não encontrado.']);
                 return;
             }
 
-            $itemModel->delete($id);
+            $itemModel->updateStatus($id, 'arquivado');
 
             http_response_code(200);
-            echo json_encode(['sucesso' => true, 'mensagem' => 'Item deletado com sucesso']);
+            echo json_encode(['sucesso' => true, 'mensagem' => 'Item removido do fluxo com sucesso.']);
         } catch (Exception $e) {
              http_response_code(500);
-             echo json_encode(['error' => 'Erro ao deletar: ' . $e->getMessage()]);
+             echo json_encode(['error' => 'Erro ao remover item.']);
         }
     }
 

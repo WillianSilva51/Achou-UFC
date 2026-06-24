@@ -120,23 +120,25 @@ class CategoriaController
         $categoriaModel = new Categoria();
 
         try {
-            if (!$categoriaModel->findById($id)) {
-                http_response_code(404);
-                echo json_encode(['error' => 'Categoria não encontrada para atualização']);
-                return;
-            }
-
             $sucesso = $categoriaModel->update($id, $nome);
 
             if ($sucesso) {
                 http_response_code(200);
-                echo json_encode(['sucesso' => true, 'message' => 'Categoria atualizada com sucesso']);
+                echo json_encode(['sucesso' => true, 'mensagem' => 'Categoria atualizada com sucesso.']);
             } else {
-                throw new Exception("Nenhuma alteração foi feita ou falha no banco.");
+                throw new Exception("Falha ao atualizar ou nenhuma alteração foi feita.");
             }
+        } catch (\PDOException $e) {
+            if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_categoria_nome') !== false) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe outra categoria com este nome.']);
+                return;
+            }
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao atualizar categoria.']);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['erro' => 'Erro interno ao atualizar a categoria']);
+            echo json_encode(['error' => 'Erro interno: ' . $e->getMessage()]);
         }
     }
 

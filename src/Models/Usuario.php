@@ -53,15 +53,10 @@ class Usuario extends BaseModel
 
     public function updatePassword(int $id, string $nova_senha): bool
     {
-        $hash = password_hash($nova_senha, PASSWORD_BCRYPT, ['cost' => 12]);
-        
+        $hash = password_hash($nova_senha, PASSWORD_DEFAULT);
         $sql = "UPDATE {$this->table} SET senha = :senha WHERE id = :id";
         $stmt = $this->db->prepare($sql);
-
-        return $stmt->execute([
-            'id'    => $id,
-            'senha' => $hash,
-        ]);
+        return $stmt->execute(['id' => $id, 'senha' => $hash]);
     }
 
     private function buildWhereClause(array $filtros): array
@@ -69,13 +64,11 @@ class Usuario extends BaseModel
         $where = [];
         $binds = [];
 
-        // Filtra pelo tipo de conta (admin ou aluno)
         if (!empty($filtros['role'])) {
             $where[] = "role = :role";
             $binds[':role'] = $filtros['role'];
         }
 
-        // Permite pesquisar um pedaço do nome ou do email
         if (!empty($filtros['busca'])) {
             $where[] = "(nome LIKE :busca OR email LIKE :busca)";
             $binds[':busca'] = '%' . $filtros['busca'] . '%';
