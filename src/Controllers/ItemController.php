@@ -15,7 +15,6 @@ class ItemController
 
         $usuarioLogado = AuthMiddleware::handle();
 
-        // Apenas admins podem registrar novos itens achados
         if ($usuarioLogado->role !== 'admin') {
             http_response_code(403);
             echo json_encode(['error' => 'Apenas administradores podem registrar itens.']);
@@ -24,16 +23,44 @@ class ItemController
 
         $dados = $request->getBody();
 
-        $titulo          = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8') : '';
-        $descricao       = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
-        $data_encontrado = !empty($dados['data_encontrado']) ? htmlspecialchars(strip_tags($dados['data_encontrado']), ENT_QUOTES, 'UTF-8') : date('Y-m-d');
-        $foto_url        = !empty($dados['foto_url']) ? htmlspecialchars(strip_tags($dados['foto_url']), ENT_QUOTES, 'UTF-8') : null;
-        
-        $categoria_id    = isset($dados['categoria_id']) ? (int) $dados['categoria_id'] : 0;
-        $local_id        = isset($dados['local_id']) ? (int) $dados['local_id'] : 0;
-        
-        $status          = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8') : 'disponível';
-        $registrado_por  = (int) $usuarioLogado->sub;
+        $titulo       = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8') : '';
+        $descricao    = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
+        $status       = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8') : 'disponível';
+        $categoria_id = isset($dados['categoria_id']) ? (int) $dados['categoria_id'] : 0;
+        $local_id     = isset($dados['local_id']) ? (int) $dados['local_id'] : 0;
+        $registrado_por = (int) $usuarioLogado->sub;
+
+        $data_encontrado = date('Y-m-d'); 
+        if (!empty($dados['data_encontrado'])) {
+            $data_raw = trim($dados['data_encontrado']);
+            $d = \DateTime::createFromFormat('Y-m-d', $data_raw);
+            
+            if (!$d || $d->format('Y-m-d') !== $data_raw) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Formato de data inválido. Use o padrão AAAA-MM-DD.']);
+                return;
+            }
+            $data_encontrado = $data_raw;
+        }
+
+        $foto_url = null;
+        if (!empty($dados['foto_url'])) {
+            $url_limpa = filter_var($dados['foto_url'], FILTER_SANITIZE_URL);
+            
+            if (!filter_var($url_limpa, FILTER_VALIDATE_URL)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'A URL da foto é inválida.']);
+                return;
+            }
+
+            $esquema = parse_url($url_limpa, PHP_URL_SCHEME);
+            if (!in_array(strtolower($esquema ?? ''), ['http', 'https'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'A URL da foto deve iniciar com http:// ou https://.']);
+                return;
+            }
+            $foto_url = $url_limpa;
+        }
 
         if (empty($titulo) || empty($categoria_id) || empty($local_id)) {
             http_response_code(400);
@@ -161,13 +188,43 @@ class ItemController
 
         $dados = $request->getBody();
 
-        $titulo          = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8') : '';
-        $descricao       = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
-        $data_encontrado = !empty($dados['data_encontrado']) ? htmlspecialchars(strip_tags($dados['data_encontrado']), ENT_QUOTES, 'UTF-8') : '';
-        $foto_url        = !empty($dados['foto_url']) ? htmlspecialchars(strip_tags($dados['foto_url']), ENT_QUOTES, 'UTF-8') : null;
-        $categoria_id    = isset($dados['categoria_id']) ? (int) $dados['categoria_id'] : 0;
-        $local_id        = isset($dados['local_id']) ? (int) $dados['local_id'] : 0;
-        $status          = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8') : '';
+        $titulo       = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8') : '';
+        $descricao    = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
+        $status       = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8') : '';
+        $categoria_id = isset($dados['categoria_id']) ? (int) $dados['categoria_id'] : 0;
+        $local_id     = isset($dados['local_id']) ? (int) $dados['local_id'] : 0;
+
+        $data_encontrado = ''; 
+        if (!empty($dados['data_encontrado'])) {
+            $data_raw = trim($dados['data_encontrado']);
+            $d = \DateTime::createFromFormat('Y-m-d', $data_raw);
+            
+            if (!$d || $d->format('Y-m-d') !== $data_raw) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Formato de data inválido. Use o padrão AAAA-MM-DD.']);
+                return;
+            }
+            $data_encontrado = $data_raw;
+        }
+
+        $foto_url = null;
+        if (!empty($dados['foto_url'])) {
+            $url_limpa = filter_var($dados['foto_url'], FILTER_SANITIZE_URL);
+            
+            if (!filter_var($url_limpa, FILTER_VALIDATE_URL)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'A URL da foto é inválida.']);
+                return;
+            }
+            // ajeitar aqui dps nos testes de produçãoooooo
+            $esquema = parse_url($url_limpa, PHP_URL_SCHEME);
+            if (!in_array(strtolower($esquema ?? ''), ['http', 'https'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'A URL da foto deve iniciar com http:// ou https://.']);
+                return;
+            }
+            $foto_url = $url_limpa;
+        }
 
         if (empty($titulo) || empty($categoria_id) || empty($local_id)) {
             http_response_code(400);
