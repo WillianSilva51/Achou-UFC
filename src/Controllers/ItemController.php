@@ -11,49 +11,55 @@ class ItemController
 {
     public function store(Request $request): void
     {
-
         header('Content-Type: application/json');
 
         $usuarioLogado = AuthMiddleware::handle();
 
-        $dados = $request->getBody();
-
-        if (empty($dados['titulo']) || empty($dados['categoria_id']) || empty($dados['local_id'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'nome, id, é local são obrigatorio']);
+        // Apenas admins podem registrar novos itens achados
+        if ($usuarioLogado->role !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Apenas administradores podem registrar itens.']);
             return;
         }
-        $titulo         = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo'])) : '';
-        $descricao      = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao'])) : '';
-        $data_encontrado = !empty($dados['data_encontrado']) ? htmlspecialchars(strip_tags($dados['data_encontrado'])) : date('Y-m-d');
-        $foto_url       = !empty($dados['foto_url']) ? htmlspecialchars(strip_tags($dados['foto_url'])) : null;
-        $categoria_id   = (int) $dados['categoria_id'];
-        $local_id       = (int) $dados['local_id'];
-        $status         = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status'])) : 'disponivel';
 
-        $registrado_por = (int) $usuarioLogado->sub;
+        $dados = $request->getBody();
 
-        $ItemPerdidoModel = new ItemPerdido();
+        $titulo          = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8') : '';
+        $descricao       = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
+        $data_encontrado = !empty($dados['data_encontrado']) ? htmlspecialchars(strip_tags($dados['data_encontrado']), ENT_QUOTES, 'UTF-8') : date('Y-m-d');
+        $foto_url        = !empty($dados['foto_url']) ? htmlspecialchars(strip_tags($dados['foto_url']), ENT_QUOTES, 'UTF-8') : null;
+        
+        $categoria_id    = isset($dados['categoria_id']) ? (int) $dados['categoria_id'] : 0;
+        $local_id        = isset($dados['local_id']) ? (int) $dados['local_id'] : 0;
+        
+        $status          = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8') : 'disponível';
+        $registrado_por  = (int) $usuarioLogado->sub;
+
+        if (empty($titulo) || empty($categoria_id) || empty($local_id)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Título, categoria e local são obrigatórios.']);
+            return;
+        }
+
+        $itemModel = new ItemPerdido();
+
         try {
-            $id_item = $ItemPerdidoModel->create(
-                $titulo,
-                $descricao,
-                $data_encontrado,
-                $foto_url,
-                $local_id,
-                $categoria_id,
-                $registrado_por,
-                $status,
+            $id = $itemModel->create(
+                $titulo, 
+                $descricao, 
+                $data_encontrado, 
+                $foto_url, 
+                $local_id, 
+                $categoria_id, 
+                $registrado_por, 
+                $status
             );
+
             http_response_code(201);
-            echo json_encode([
-                'sucesso'  => true,
-                'mensagem' => 'Item registrado com sucesso',
-                'id_item'  => $id_item,
-            ]);
+            echo json_encode(['sucesso' => true, 'mensagem' => 'Item registrado com sucesso.', 'id' => $id]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno banco de dados' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro interno ao salvar o item.']);
         }
     }
 
@@ -113,47 +119,87 @@ class ItemController
         }
     }
 
+    public function show(Request $request, int $id): void
+    {
+        header('Content-Type: application/json');
+
+        $itemModel = new ItemPerdido();
+
+        try {
+            // Busca o item pelo ID
+            $item = $itemModel->findById($id);
+
+            if (!$item) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Item não encontrado.']);
+                return;
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'sucesso' => true,
+                'data' => $item
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao buscar detalhes do item.']);
+        }
+    }
+
     public function update(Request $request, int $id): void
     {
         header('Content-Type: application/json');
-        $usuarioLogado = AuthMiddleware::handle(); 
 
-        $dados = $request->getBody();
+        $usuarioLogado = AuthMiddleware::handle();
 
-        if (empty($dados['titulo']) || empty($dados['categoria_id']) || empty($dados['local_id'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'titulo, categoria_id e local_id são obrigatórios']);
+        if ($usuarioLogado->role !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Apenas administradores podem editar itens.']);
             return;
         }
 
-        $titulo          = htmlspecialchars(strip_tags($dados['titulo']));
-        $descricao       = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao'])) : '';
-        $data_encontrado = !empty($dados['data_encontrado']) ? htmlspecialchars(strip_tags($dados['data_encontrado'])) : date('Y-m-d');
-        $foto_url        = !empty($dados['foto_url']) ? htmlspecialchars(strip_tags($dados['foto_url'])) : null;
-        $categoria_id    = (int) $dados['categoria_id'];
-        $local_id        = (int) $dados['local_id'];
-        $status          = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status'])) : 'disponível';
+        $dados = $request->getBody();
+
+        $titulo          = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8') : '';
+        $descricao       = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
+        $data_encontrado = !empty($dados['data_encontrado']) ? htmlspecialchars(strip_tags($dados['data_encontrado']), ENT_QUOTES, 'UTF-8') : '';
+        $foto_url        = !empty($dados['foto_url']) ? htmlspecialchars(strip_tags($dados['foto_url']), ENT_QUOTES, 'UTF-8') : null;
+        $categoria_id    = isset($dados['categoria_id']) ? (int) $dados['categoria_id'] : 0;
+        $local_id        = isset($dados['local_id']) ? (int) $dados['local_id'] : 0;
+        $status          = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8') : '';
+
+        if (empty($titulo) || empty($categoria_id) || empty($local_id)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Título, categoria e local são obrigatórios para a atualização.']);
+            return;
+        }
 
         $itemModel = new ItemPerdido();
 
         try {
             if (!$itemModel->findById($id)) {
                 http_response_code(404);
-                echo json_encode(['error' => 'Item não encontrado para atualização']);
+                echo json_encode(['error' => 'Item não encontrado.']);
                 return;
             }
 
-            $sucesso = $itemModel->update($id, $titulo, $descricao, $data_encontrado, $foto_url, $local_id, $categoria_id, $status);
+            $itemModel->update(
+                $id, 
+                $titulo, 
+                $descricao, 
+                $data_encontrado, 
+                $foto_url, 
+                $local_id, 
+                $categoria_id, 
+                $status
+            );
 
-            if ($sucesso) {
-                http_response_code(200);
-                echo json_encode(['sucesso' => true, 'mensagem' => 'Item atualizado com sucesso']);
-            } else {
-                throw new Exception("Nenhuma alteração foi feita ou falha no banco.");
-            }
+            http_response_code(200);
+            echo json_encode(['sucesso' => true, 'mensagem' => 'Item atualizado com sucesso.']);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro interno ao atualizar item.']);
         }
     }
 

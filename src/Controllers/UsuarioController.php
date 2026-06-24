@@ -31,11 +31,12 @@ class UsuarioController
         $offset = ($page - 1) * $limit;
 
         $filtros = [];
+        
         if (!empty($query['role'])) {
-            $filtros['role'] = htmlspecialchars(strip_tags($query['role']));
+            $filtros['role'] = htmlspecialchars(strip_tags($query['role']), ENT_QUOTES, 'UTF-8');
         }
         if (!empty($query['busca'])) {
-            $filtros['busca'] = htmlspecialchars(strip_tags($query['busca']));
+            $filtros['busca'] = htmlspecialchars(strip_tags($query['busca']), ENT_QUOTES, 'UTF-8');
         }
 
         $usuarioModel = new Usuario();
@@ -62,7 +63,7 @@ class UsuarioController
         }
     }
 
-    public function update(Request $request, int $id): void
+   public function update(Request $request, int $id): void
     {
         header('Content-Type: application/json');
         
@@ -82,9 +83,9 @@ class UsuarioController
             return;
         }
 
-        $nome  = htmlspecialchars(strip_tags($dados['nome']));
-        $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
-        $role  = strtolower(htmlspecialchars(strip_tags($dados['role'])));
+        $nome  = htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8');
+        $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL); 
+        $role  = strtolower(htmlspecialchars(strip_tags($dados['role']), ENT_QUOTES, 'UTF-8'));
 
         if (!$email) {
             http_response_code(400);
@@ -119,7 +120,7 @@ class UsuarioController
             echo json_encode(['error' => 'Erro interno ao atualizar usuário.']);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro interno ao processar a atualização.']);
         }
     }
 

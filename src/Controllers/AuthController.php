@@ -3,7 +3,6 @@
 namespace Controllers;
 
 use Exception;
-use Models\Administracao;
 use Models\Aluno;
 use Models\Usuario;
 use Core\Database;
@@ -25,10 +24,9 @@ class AuthController
             return;
         }
 
-        $nome  = htmlspecialchars(strip_tags($dados['nome']));
+        $nome  = htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8');
         $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
-        $senha = $dados['senha'];
-        $role  = $dados['role'] ?? 'aluno';
+        $senha = $dados['senha']; 
 
         if (!$email) {
             http_response_code(400);
@@ -42,6 +40,8 @@ class AuthController
             return;
         }
 
+        $role = 'aluno'; 
+        
         $usuarioModel = new Usuario();
         $pdo = Database::getConnection();
 
@@ -50,21 +50,14 @@ class AuthController
 
             $usuarioId = $usuarioModel->create($nome, $email, $senha, $role);
 
-            if ($role === 'aluno') {
-                if (empty($dados['matricula'])) {
-                    throw new Exception('A matrícula é obrigatória para cadastro de aluno.');
-                }
-                $alunoModel = new Aluno();
-                $alunoModel->create($usuarioId, $dados['matricula']);
-            } elseif ($role === 'admin') {
-                if (empty($dados['siap'])) {
-                    throw new Exception('O SIAPE é obrigatório para cadastro de administrador.');
-                }
-                $adminModel = new Administracao();
-                $adminModel->create($usuarioId, $dados['siap']);
-            } else {
-                throw new Exception("Role inválida no sistema.");
+            if (empty($dados['matricula'])) {
+                throw new Exception('A matrícula é obrigatória para cadastro de aluno.');
             }
+            
+            $matricula = htmlspecialchars(strip_tags($dados['matricula']), ENT_QUOTES, 'UTF-8');
+            
+            $alunoModel = new Aluno();
+            $alunoModel->create($usuarioId, $matricula);
             
             $pdo->commit();
 
@@ -77,28 +70,18 @@ class AuthController
 
         } catch (PDOException $e) {
             $pdo->rollBack();
-            http_response_code(409);
-            echo json_encode([
-                'error' => 'Conflito de dados: Email, Matrícula ou SIAPE já cadastrados.',
-                'debug' => $e->getMessage() 
-            ]);
-        }  catch (\PDOException $e) {
-            $pdo->rollBack();
-            http_response_code(409); // 409 Conflict
+            http_response_code(409); 
             
             $mensagem = 'Erro de conflito de dados no banco.';
             
-            // Lendo exatamente o nome da constraint que você criou
             if (strpos($e->getMessage(), 'uq_usuario_email') !== false) {
                 $mensagem = 'Este e-mail já está cadastrado no sistema.';
             } elseif (strpos($e->getMessage(), 'uq_aluno_matricula') !== false) {
                 $mensagem = 'Esta matrícula já está associada a outro aluno.';
-            } elseif (strpos($e->getMessage(), 'uq_admin_siap') !== false) {
-                $mensagem = 'Este SIAPE já está cadastrado no sistema.';
             }
 
             echo json_encode(['error' => $mensagem]);
-            error_log('Erro de BD no registro: ' . $e->getMessage());
+            error_log('Erro de BD no registro: ' . $e->getMessage()); 
             
         } catch (Exception $e) {
             if ($pdo->inTransaction()) {
@@ -121,18 +104,30 @@ class AuthController
             return;
         }
 
-        $usuarioModel = new Usuario();
-        $user = $usuarioModel->findByEmail($dados['email']);
+        $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
+        $senha = $dados['senha'];
 
-        if (!$user || !password_verify($dados['senha'], $user['senha'])) {
+        if (!$email) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Formato de email inválido.']);
+            return;
+        }
+
+        $usuarioModel = new Usuario();
+        $user = $usuarioModel->findByEmail($email);
+
+        if (!$user || !password_verify($senha, $user['senha'])) {
+            http_response_code(401);
             echo json_encode(['error' => 'Credenciais inválidas.']);
             return;
         }
 
+        $tempoExpiracao = isset($_ENV['JWT_EXPIRATION']) ? (int)$_ENV['JWT_EXPIRATION'] : 1200;
+        
         $payload = [
             'iss'  => 'achados_e_perdidos_ufc',
             'iat'  => time(),
-            'exp'  => time() + (15 * 60), 
+            'exp'  => time() + $tempoExpiracao,
             'sub'  => $user['id'],
             'role' => $user['role'],
         ];

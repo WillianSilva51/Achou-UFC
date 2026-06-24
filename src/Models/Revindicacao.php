@@ -96,8 +96,6 @@ class Reivindicacao extends BaseModel
         try {
             $this->db->beginTransaction();
 
-            // SEGURANÇA MÁXIMA: 'FOR UPDATE' tranca essa linha no banco. 
-            // Nenhuma outra requisição consegue ler ou alterar esse item até o commit.
             $sqlCheck = "SELECT status FROM item_perdido WHERE id = :item_id FOR UPDATE";
             $stmtCheck = $this->db->prepare($sqlCheck);
             $stmtCheck->execute(['item_id' => $item_id]);
@@ -107,14 +105,12 @@ class Reivindicacao extends BaseModel
                 throw new \Exception('Este item já não está mais disponível.');
             }
 
-            // 1. Cria a reivindicação
             $sql1 = "INSERT INTO {$this->table} (status_reivindicacao, data_reivindicacao, item_id, aluno_id) 
                      VALUES ('pendente', :data, :item_id, :aluno_id) RETURNING id";
             $stmt1 = $this->db->prepare($sql1);
             $stmt1->execute(['data' => $data_reivindicacao, 'item_id' => $item_id, 'aluno_id' => $aluno_id]);
             $id_reivindicacao = (int) $stmt1->fetchColumn();
 
-            // 2. Transforma o status do item em análise
             $sql2 = "UPDATE item_perdido SET status = 'em_analise' WHERE id = :id";
             $stmt2 = $this->db->prepare($sql2);
             $stmt2->execute(['id' => $item_id]);
