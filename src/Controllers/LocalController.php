@@ -60,6 +60,9 @@ class LocalController
     {
         header('Content-Type: application/json');
 
+        // 🛡️ FECHANDO A ROTA DE LISTAGEM
+        AuthMiddleware::handle();
+
         $localModel = new Local();
 
         try {
@@ -76,9 +79,12 @@ class LocalController
             echo json_encode(['error' => 'Erro interno ao buscar locais.']);
         }
     }
+    
     public function show(Request $request, int $id): void
     {
         header('Content-Type: application/json');
+
+        AuthMiddleware::handle();
 
         $localModel = new Local();
 

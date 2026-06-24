@@ -125,7 +125,7 @@ class Reivindicacao extends BaseModel
         }
     }
 
-    public function processarAvaliacao(int $id_reivindicacao, int $item_id, string $novo_status): bool
+    public function processarAvaliacao(int $id_reivindicacao, string $novo_status, int $item_id, string $status_item): bool
     {
         $pdo = \Core\Database::getConnection();
         
@@ -137,7 +137,6 @@ class Reivindicacao extends BaseModel
             $stmt1->execute(['status' => $novo_status, 'id' => $id_reivindicacao]);
 
             if ($novo_status === 'aprovado') {
-                
                 $sql2 = "UPDATE reivindicacao 
                          SET status_reivindicacao = 'recusado' 
                          WHERE item_id = :item_id 
@@ -145,11 +144,11 @@ class Reivindicacao extends BaseModel
                          AND status_reivindicacao = 'pendente'";
                 $stmt2 = $pdo->prepare($sql2);
                 $stmt2->execute(['item_id' => $item_id, 'id' => $id_reivindicacao]);
-
-                $sql3 = "UPDATE item_perdido SET status = 'devolvido' WHERE id = :item_id";
-                $stmt3 = $pdo->prepare($sql3);
-                $stmt3->execute(['item_id' => $item_id]);
             }
+
+            $sql3 = "UPDATE item_perdido SET status = :status_item WHERE id = :item_id";
+            $stmt3 = $pdo->prepare($sql3);
+            $stmt3->execute(['status_item' => $status_item, 'item_id' => $item_id]);
 
             $pdo->commit();
             return true;

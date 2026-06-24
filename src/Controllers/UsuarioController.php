@@ -87,6 +87,12 @@ class UsuarioController
         $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL); 
         $role  = strtolower(htmlspecialchars(strip_tags($dados['role']), ENT_QUOTES, 'UTF-8'));
 
+        if ($id == $usuarioLogado->sub && $role !== $usuarioLogado->role) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Você não tem permissão para alterar o seu próprio nível de acesso.']);
+            return;
+        }
+
         if (!$email) {
             http_response_code(400);
             echo json_encode(['error' => 'Formato de email inválido.']);
@@ -129,30 +135,42 @@ class UsuarioController
         header('Content-Type: application/json');
         
         $usuarioLogado = AuthMiddleware::handle();
-
-        if ($usuarioLogado->sub != $id && $usuarioLogado->role !== 'admin') {
-            http_response_code(403);
-            echo json_encode(['error' => 'Você não tem permissão para alterar a senha deste usuário.']);
-            return;
-        }
-
         $dados = $request->getBody();
 
-        if (empty($dados['senha_atual']) || empty($dados['nova_senha']) || strlen($dados['nova_senha']) < 8) {
+        if (empty($dados['nova_senha']) || strlen($dados['nova_senha']) < 8) {
             http_response_code(400);
-            echo json_encode(['error' => 'A senha atual e a nova senha (mínimo 8 caracteres) são obrigatórias.']);
+            echo json_encode(['error' => 'A nova senha deve ter no mínimo 8 caracteres.']);
             return;
         }
 
         $usuarioModel = new Usuario();
 
         try {
-            $user = $usuarioModel->findById($id);
-            
-            if (!$user || !password_verify($dados['senha_atual'], $user['senha'])) {
-                http_response_code(401);
-                echo json_encode(['error' => 'A senha atual está incorreta.']);
+            $userAlvo = $usuarioModel->findById($id);
+            if (!$userAlvo) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Usuário não encontrado.']);
                 return;
+            }
+
+            if ($usuarioLogado->sub == $id) {
+                if (empty($dados['senha_atual']) || !password_verify($dados['senha_atual'], $userAlvo['senha'])) {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'A senha atual está incorreta ou não foi informada.']);
+                    return;
+                }
+            } 
+            else {
+                if ($usuarioLogado->role !== 'admin') {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'Você não tem permissão para alterar a senha de outro usuário.']);
+                    return;
+                }
+                if ($userAlvo['role'] === 'admin') {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'Um administrador não pode resetar a senha de outro administrador.']);
+                    return;
+                }
             }
 
             $sucesso = $usuarioModel->updatePassword($id, $dados['nova_senha']);
@@ -160,9 +178,10 @@ class UsuarioController
                 http_response_code(200);
                 echo json_encode(['sucesso' => true, 'mensagem' => 'Senha atualizada com sucesso.']);
             } else {
-                throw new Exception("Falha ao atualizar a senha.");
+                throw new Exception("Falha ao atualizar a senha no banco.");
             }
         } catch (Exception $e) {
+            error_log("Erro no updatePassword: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao atualizar a senha.']);
         }

@@ -37,7 +37,7 @@ class ReivindicacaoController
         try {
             $pdo->beginTransaction();
 
-            $stmt = $pdo->prepare("SELECT status FROM item_perdido WHERE id = :id FOR UPDATE");
+            $stmt = $pdo->prepare("SELECT status, registrado_por FROM item_perdido WHERE id = :id FOR UPDATE");
             $stmt->execute(['id' => $item_id]);
             $item = $stmt->fetch();
 
@@ -166,25 +166,14 @@ class ReivindicacaoController
         }
 
         $dados = $request->getBody();
-        $statusRecebido = !empty($dados['status']) ? strtolower(htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8')) : '';
-        $statusPermitidos = ['aprovado', 'recusado', 'pendente'];
+        
+        // 🛡️ LEITURA ÚNICA: Aceita tanto 'status' quanto 'status_reivindicacao' do front-end
+        $statusBruto = $dados['status'] ?? $dados['status_reivindicacao'] ?? '';
+        $novo_status = strtolower(htmlspecialchars(strip_tags($statusBruto), ENT_QUOTES, 'UTF-8'));
 
-        if (!in_array($statusRecebido, $statusPermitidos)) {
+        if (!in_array($novo_status, ['aprovado', 'recusado', 'pendente'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Status inválido. Use aprovado, recusado ou pendente.']);
-            return;
-        }
-        if (empty($dados['status_reivindicacao'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'O novo status é obrigatório (aprovado ou recusado).']);
-            return;
-        }
-
-        $novo_status = strtolower(htmlspecialchars(strip_tags($dados['status_reivindicacao'])));
-
-        if (!in_array($novo_status, ['aprovado', 'recusado'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Status inválido. Use "aprovado" ou "recusado".']);
             return;
         }
 
@@ -202,6 +191,7 @@ class ReivindicacaoController
             $item_id = $reivindicacao['item_id'];
             $status_item = ($novo_status === 'aprovado') ? 'devolvido' : 'disponível';
             
+            // Chamando a model com os 4 parâmetros exatos que você definiu no seu código
             $reivindicacaoModel->processarAvaliacao($id, $novo_status, $item_id, $status_item);
 
             http_response_code(200);
@@ -211,6 +201,7 @@ class ReivindicacaoController
             ]);
 
         } catch (Exception $e) {
+            error_log("Erro no updateStatus: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao processar a avaliação.']);
         }
