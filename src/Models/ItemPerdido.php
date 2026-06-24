@@ -60,9 +60,17 @@ class ItemPerdido extends BaseModel
 
     public function updateStatus(int $id, string $status): bool
     {
-        $sql = "UPDATE {$this->table} SET status = :status WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute(['id' => $id, 'status' => $status]);
+        $statusValidos = ['disponível', 'disponivel', 'devolvido', 'arquivado', 'em_analise'];
+        $statusLimpo = strtolower($status);
+        
+        if (!in_array($statusLimpo, $statusValidos, true)) {
+            throw new \InvalidArgumentException("Status de item '$status' inválido.");
+        }
+
+        $pdo = \Core\Database::getConnection();
+        $sql = "UPDATE item_perdido SET status = :status WHERE id = :id";
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute(['status' => $statusLimpo, 'id' => $id]);
     }
 
     private function buildWhereClause(array $filtros): array

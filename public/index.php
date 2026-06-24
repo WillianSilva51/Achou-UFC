@@ -27,6 +27,7 @@ $router = new Router($request);
 
 $router->post('/api/register', [AuthController::class, 'register']);
 $router->post('/api/login', [AuthController::class, 'login']);
+$router->post('/api/logout', [AuthController::class, 'logout']);
 
 $router->get('/api/usuarios', [UsuarioController::class, 'index']);
 $router->put('/api/usuarios/{id}', [UsuarioController::class, 'update']);

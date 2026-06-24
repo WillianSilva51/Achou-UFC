@@ -9,6 +9,7 @@ use Core\Database;
 use PDOException;
 use Firebase\JWT\JWT;
 use Core\Request;
+use Middlewares\AuthMiddleware;
 
 class AuthController
 {
@@ -20,6 +21,12 @@ class AuthController
         header('Content-Type: application/json');
 
         $dados = $request->getBody();
+
+        if (strlen($dados['senha']) < 8 || strlen($dados['senha']) > 72) {
+            http_response_code(400);
+            echo json_encode(['error' => 'A senha deve ter entre 8 e 72 caracteres.']);
+            return;
+        }
 
         if (empty($dados['nome']) || empty($dados['email']) || empty($dados['senha'])) {
             http_response_code(400);
@@ -71,22 +78,15 @@ class AuthController
                 'usuario_id' => $usuarioId,
             ]);
 
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $pdo->rollBack();
             http_response_code(409); 
             
-            $mensagem = 'Erro de conflito de dados no banco.';
+            echo json_encode(['error' => 'Os dados informados (e-mail ou matrícula) já estão em uso no sistema.']);
             
-            if (strpos($e->getMessage(), 'uq_usuario_email') !== false) {
-                $mensagem = 'Este e-mail já está cadastrado no sistema.';
-            } elseif (strpos($e->getMessage(), 'uq_aluno_matricula') !== false) {
-                $mensagem = 'Esta matrícula já está associada a outro aluno.';
-            }
-
-            echo json_encode(['error' => $mensagem]);
-            error_log('Erro de BD no registro: ' . $e->getMessage()); 
+            error_log('Erro de BD no registro (Conflito): ' . $e->getMessage());
             
-        } catch (Exception $e) {
+        } catch (\Exception $e)  {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
@@ -97,10 +97,12 @@ class AuthController
 
     public function login(Request $request): void
     {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        \Core\RateLimiter::check($ip, 'login', 5, 300);
+
         header('Content-Type: application/json');
-
         $dados = $request->getBody();
-
+        
         if (empty($dados['email']) || empty($dados['senha'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Email e senha são obrigatórios.']);
@@ -148,4 +150,18 @@ class AuthController
             ],
         ]);
     }
+
+    public function logout(Request $request): void
+    {
+        header('Content-Type: application/json');
+        
+        AuthMiddleware::handle();
+
+        http_response_code(200);
+        echo json_encode([
+            'sucesso' => true, 
+            'mensagem' => 'Logout efetuado com sucesso. O token deve ser removido do armazenamento do cliente.'
+        ]);
+    }
+    
 }
