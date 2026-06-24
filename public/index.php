@@ -4,6 +4,13 @@ $origemPermitida = $_ENV['CORS_ORIGIN'] ?? '*';
 header("Access-Control-Allow-Origin: " . $origemPermitida);
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'none'");
+
 date_default_timezone_set('America/Fortaleza');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
