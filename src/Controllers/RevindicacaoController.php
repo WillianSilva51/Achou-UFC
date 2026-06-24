@@ -145,7 +145,14 @@ class ReivindicacaoController
         }
 
         $dados = $request->getBody();
+        $statusRecebido = !empty($dados['status']) ? strtolower(htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8')) : '';
+        $statusPermitidos = ['aprovado', 'recusado', 'pendente'];
 
+        if (!in_array($statusRecebido, $statusPermitidos)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Status inválido. Use aprovado, recusado ou pendente.']);
+            return;
+        }
         if (empty($dados['status_reivindicacao'])) {
             http_response_code(400);
             echo json_encode(['error' => 'O novo status é obrigatório (aprovado ou recusado).']);

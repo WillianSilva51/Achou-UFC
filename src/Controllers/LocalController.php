@@ -17,36 +17,45 @@ class LocalController
 
         if ($usuarioLogado->role !== 'admin') {
             http_response_code(403);
-            echo json_encode(['error' => 'Acesso negado, apenas administradores podem acessar']);
+            echo json_encode(['error' => 'Acesso negado, apenas administradores podem acessar.']);
             return;
         }
         $dados = $request->getBody();
 
-        if (empty($dados['nome_local'])) {
+        $nome_local = !empty($dados['nome_local']) ? htmlspecialchars(strip_tags($dados['nome_local']), ENT_QUOTES, 'UTF-8') : '';
+        $descricao  = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
+
+        if (empty($nome_local)) {
             http_response_code(400);
-            echo json_encode(['error' => 'nome do local é obrigatorio']);
+            echo json_encode(['error' => 'O nome do local é obrigatório.']);
             return;
         }
 
-        $nome_local = htmlspecialchars(strip_tags($dados['nome_local']));
-
-        $descricao = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao'])) : '';
         $localModel = new Local();
 
         try {
             $id_local = $localModel->create($nome_local, $descricao);
+            
             http_response_code(201);
-
             echo json_encode([
                 'sucesso' => true,
-                'message' => 'Local cadastro com sucesso',
+                'message' => 'Local cadastrado com sucesso',
                 'id_local' => $id_local,
             ]);
+        } catch (\PDOException $e) {
+            if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_local_nome') !== false) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe um local cadastrado com este nome.']);
+                return;
+            }
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro no banco de dados ao salvar o local.']);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['erro' => 'Erro interno ao salvar o local ']);
+            echo json_encode(['error' => 'Erro interno ao salvar o local.']);
         }
-    }
+    }    
+
     public function listLocal(Request $request): void
     {
         header('Content-Type: application/json');
@@ -101,22 +110,23 @@ class LocalController
 
         if ($usuarioLogado->role !== 'admin') {
             http_response_code(403);
-            echo json_encode(['error' => 'Acesso negado, apenas administradores podem atualizar locais']);
+            echo json_encode(['error' => 'Acesso negado, apenas administradores podem atualizar locais.']);
             return;
         }
 
         $dados = $request->getBody();
 
-        if (empty($dados['nome_local'])) {
+        $nome_local = !empty($dados['nome_local']) ? htmlspecialchars(strip_tags($dados['nome_local']), ENT_QUOTES, 'UTF-8') : '';
+        $descricao  = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
+
+        if (empty($nome_local)) {
             http_response_code(400);
-            echo json_encode(['error' => 'nome do local é obrigatorio']);
+            echo json_encode(['error' => 'O nome do local é obrigatório.']);
             return;
         }
 
-        $nome_local = htmlspecialchars(strip_tags($dados['nome_local']));
-        $descricao = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao'])) : '';
-
         $localModel = new Local();
+        
         try {
             $sucesso = $localModel->update($id, $nome_local, $descricao);
 
@@ -136,7 +146,7 @@ class LocalController
             echo json_encode(['error' => 'Erro interno ao atualizar local.']);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro interno ao processar a atualização.']);
         }
     }
 

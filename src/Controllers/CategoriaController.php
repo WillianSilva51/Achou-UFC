@@ -18,35 +18,45 @@ class CategoriaController
         if ($usuarioLogado->role !== 'admin') {
             http_response_code(403);
             echo json_encode([
-                'Error' => 'Acesso negado, apenas administradores podem criar categorias',
+                'error' => 'Acesso negado, apenas administradores podem criar categorias',
             ]);
             return;
         }
 
         $dados = $request->getBody();
 
-        if (empty($dados['nome'])) {
+        $nome = !empty($dados['nome']) ? htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8') : '';
+
+        if (empty($nome)) {
             http_response_code(400);
             echo json_encode([
-                'Error' => 'O nome da categoria é obrigatorio',
+                'error' => 'O nome da categoria é obrigatório',
             ]);
             return;
         }
-        $nome = htmlspecialchars(strip_tags($dados['nome']));
+
+        $categoriaModel = new Categoria();
 
         try {
-            $id_categoria = new Categoria();
-            $id_categoria = $id_categoria->create($nome);   
+            $id_categoria = $categoriaModel->create($nome);   
             http_response_code(201);
             echo json_encode([
                 'sucesso' => true,
-                'message' => 'Categoaria criada com sucesso',
+                'message' => 'Categoria criada com sucesso',
                 'id_categoria' => $id_categoria,
             ]);
+        } catch (\PDOException $e) {
+            if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_categoria_nome') !== false) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe uma categoria cadastrada com este nome.']);
+                return;
+            }
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro no banco de dados ao criar categoria.']);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([
-                'Error' => 'Erro interno' . $e->getMessage(),
+                'error' => 'Erro interno ao processar a criação da categoria.',
             ]);
         }
     }
@@ -110,13 +120,15 @@ class CategoriaController
 
         $dados = $request->getBody();
 
-        if (empty($dados['nome'])) {
+        // 🛡️ WHITE-LISTING E SANITIZAÇÃO
+        $nome = !empty($dados['nome']) ? htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8') : '';
+
+        if (empty($nome)) {
             http_response_code(400);
             echo json_encode(['error' => 'O nome da categoria é obrigatório']);
             return;
         }
 
-        $nome = htmlspecialchars(strip_tags($dados['nome']));
         $categoriaModel = new Categoria();
 
         try {
@@ -138,7 +150,7 @@ class CategoriaController
             echo json_encode(['error' => 'Erro interno ao atualizar categoria.']);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro interno ao processar a atualização.']);
         }
     }
 
