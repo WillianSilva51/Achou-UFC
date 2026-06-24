@@ -127,6 +127,16 @@ class Reivindicacao extends BaseModel
 
     public function processarAvaliacao(int $id_reivindicacao, string $novo_status, int $item_id, string $status_item): bool
     {
+        $statusReivindicacaoValidos = ['aprovado', 'recusado', 'pendente'];
+        if (!in_array(strtolower($novo_status), $statusReivindicacaoValidos, true)) {
+            throw new \InvalidArgumentException("Status de reivindicação inválido.");
+        }
+
+        $statusItemValidos = ['disponível', 'disponivel', 'devolvido', 'arquivado', 'em_analise'];
+        if (!in_array(strtolower($status_item), $statusItemValidos, true)) {
+            throw new \InvalidArgumentException("Status de item inválido.");
+        }
+
         $pdo = \Core\Database::getConnection();
         
         try {

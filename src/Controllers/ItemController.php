@@ -25,7 +25,15 @@ class ItemController
 
         $titulo       = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8') : '';
         $descricao    = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
-        $status       = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8') : 'disponível';
+        $statusRaw = !empty($dados['status']) ? strtolower(htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8')) : 'disponível';
+        
+        $statusValidos = ['disponível', 'disponivel', 'devolvido', 'arquivado', 'em_analise'];
+        if (!in_array($statusRaw, $statusValidos, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Status do item inválido.']);
+            return;
+        }
+        $status = $statusRaw;
         $categoria_id = isset($dados['categoria_id']) ? (int) $dados['categoria_id'] : 0;
         $local_id     = isset($dados['local_id']) ? (int) $dados['local_id'] : 0;
         $registrado_por = (int) $usuarioLogado->sub;
@@ -193,7 +201,17 @@ class ItemController
 
         $titulo       = !empty($dados['titulo']) ? htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8') : '';
         $descricao    = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
-        $status       = !empty($dados['status']) ? htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8') : '';
+        $statusRaw = !empty($dados['status']) ? strtolower(htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8')) : '';
+        
+        if ($statusRaw !== '') {
+            $statusValidos = ['disponível', 'disponivel', 'devolvido', 'arquivado', 'em_analise'];
+            if (!in_array($statusRaw, $statusValidos, true)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Status do item inválido.']);
+                return;
+            }
+        }
+        $status = $statusRaw;
         $categoria_id = isset($dados['categoria_id']) ? (int) $dados['categoria_id'] : 0;
         $local_id     = isset($dados['local_id']) ? (int) $dados['local_id'] : 0;
 

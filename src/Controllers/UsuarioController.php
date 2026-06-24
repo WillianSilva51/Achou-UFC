@@ -136,7 +136,11 @@ class UsuarioController
         
         $usuarioLogado = AuthMiddleware::handle();
         $dados = $request->getBody();
-
+        if (strlen($dados['senha']) < 8 || strlen($dados['senha']) > 72) {
+            http_response_code(400);
+            echo json_encode(['error' => 'A senha deve ter entre 8 e 72 caracteres.']);
+            return;
+        }
         if (empty($dados['nova_senha']) || strlen($dados['nova_senha']) < 8) {
             http_response_code(400);
             echo json_encode(['error' => 'A nova senha deve ter no mínimo 8 caracteres.']);
@@ -160,15 +164,30 @@ class UsuarioController
                     return;
                 }
             } 
+
             else {
                 if ($usuarioLogado->role !== 'admin') {
                     http_response_code(403);
                     echo json_encode(['error' => 'Você não tem permissão para alterar a senha de outro usuário.']);
                     return;
                 }
+                
                 if ($userAlvo['role'] === 'admin') {
                     http_response_code(403);
                     echo json_encode(['error' => 'Um administrador não pode resetar a senha de outro administrador.']);
+                    return;
+                }
+
+                if (empty($dados['senha_admin'])) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Confirme sua senha de administrador para resetar a senha de outro usuário.']);
+                    return;
+                }
+
+                $adminUser = $usuarioModel->findById($usuarioLogado->sub);
+                if (!$adminUser || !password_verify($dados['senha_admin'], $adminUser['senha'])) {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'Senha do administrador incorreta. Acesso negado.']);
                     return;
                 }
             }

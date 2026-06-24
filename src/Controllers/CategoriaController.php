@@ -64,7 +64,7 @@ class CategoriaController
     public function index(Request $request): void
     {
         header('Content-Type: application/json');
-
+        AuthMiddleware::handle();
         $categoriaModel = new Categoria();
         try {
             $categorias = $categoriaModel->findAll();
@@ -83,7 +83,8 @@ class CategoriaController
     public function show(Request $request, int $id): void
     {
         header('Content-Type: application/json');
-
+        AuthMiddleware::handle();
+        
         $categoriaModel = new Categoria();
 
         try {
