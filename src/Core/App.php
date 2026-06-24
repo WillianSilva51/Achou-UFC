@@ -1,5 +1,6 @@
 <?php
 
+namespace Core;
 use Core\App;
 
 $app = new App();

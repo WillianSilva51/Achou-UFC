@@ -8,16 +8,18 @@ use PDO;
 class Usuario extends BaseModel
 {
     protected string $table = 'usuario';
-    public function findbyEmail(string $email): ?array
+
+    public function findByEmail(string $email): ?array
     {
-        $query = "SELECT id, nome, email, senha,role FROM {$this->table} WHERE email = :email";
+        $query = "SELECT id, nome, email, senha, role FROM {$this->table} WHERE email = :email LIMIT 1";
         $stmt = $this->db->prepare($query);
         $stmt->execute([
             'email' => $email,
         ]);
+        
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $user ?: null;
+        return $user !== false ? $user : null;
     }
 
     public function create(string $nome, string $email, string $senha, string $role = 'aluno'): int
@@ -27,11 +29,92 @@ class Usuario extends BaseModel
         $sql = "INSERT INTO {$this->table} (nome, email, senha, role) VALUES (:nome, :email, :senha, :role) RETURNING id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            'nome' => $nome,
+            'nome'  => $nome,
             'email' => $email,
             'senha' => $hash,
-            'role' => $role,
+            'role'  => $role,
         ]);
+        
         return (int) $stmt->fetchColumn();
     }
+
+    public function update(int $id, string $nome, string $email, string $role): bool
+    {
+        $sql = "UPDATE {$this->table} SET nome = :nome, email = :email, role = :role WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            'id'    => $id,
+            'nome'  => $nome,
+            'email' => $email,
+            'role'  => $role,
+        ]);
+    }
+
+    public function updatePassword(int $id, string $nova_senha): bool
+    {
+        $hash = password_hash($nova_senha, PASSWORD_DEFAULT);
+        $sql = "UPDATE {$this->table} SET senha = :senha WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute(['id' => $id, 'senha' => $hash]);
+    }
+
+    private function buildWhereClause(array $filtros): array
+    {
+        $where = [];
+        $binds = [];
+
+        if (!empty($filtros['role'])) {
+            $where[] = "role = :role";
+            $binds[':role'] = $filtros['role'];
+        }
+
+        if (!empty($filtros['busca'])) {
+            $where[] = "(nome LIKE :busca OR email LIKE :busca)";
+            $binds[':busca'] = '%' . $filtros['busca'] . '%';
+        }
+
+        $sqlWhere = count($where) > 0 ? " WHERE " . implode(" AND ", $where) : "";
+        
+        return ['sql' => $sqlWhere, 'binds' => $binds];
+    }
+
+    public function countFiltered(array $filtros = []): int
+    {
+        $whereData = $this->buildWhereClause($filtros);
+        
+        $sql = "SELECT COUNT(id) FROM {$this->table}" . $whereData['sql'];
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($whereData['binds']);
+        
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function findAll(int $limit = 20, int $offset = 0, array $filtros = []): array
+    {
+        $whereData = $this->buildWhereClause($filtros);
+
+        $sql = "SELECT id, nome, email, role FROM {$this->table}" 
+               . $whereData['sql'] . 
+               " ORDER BY nome ASC LIMIT :limit OFFSET :offset";
+                
+        $stmt = $this->db->prepare($sql);
+
+        foreach ($whereData['binds'] as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return $resultado ?: [];
+    }
+
+    
+
+
 }

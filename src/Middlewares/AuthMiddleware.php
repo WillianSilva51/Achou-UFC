@@ -2,34 +2,51 @@
 
 namespace Middlewares;
 
+use Exception;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Exception;
+use Firebase\JWT\ExpiredException;
+use Firebase\JWT\SignatureInvalidException;
 
 class AuthMiddleware
 {
-    public static function handle(): object
+    public static function handle()
     {
-        $handle = getallheaders();
-        $authHeader = $handle['authorization'] ?? $_SERVER['HTTP_AUTHORIZATION'] ?? null;
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
 
-        if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        if (!$authHeader) {
             http_response_code(401);
-            echo json_encode(['error' => 'Acesso negado. Token não fornecido ou formato inválido.']);
+            echo json_encode(['error' => 'Token de autenticação não fornecido.']);
             exit;
         }
 
-        $token = $matches[1];
+        $matches = [];
+        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Formato de token inválido.']);
+            exit;
+        }
+
+        $jwt = $matches[1];
 
         try {
-            // Descriptografa o token usando a chave do seu .env
-            $decoded = JWT::decode($token, new Key($_ENV['JWT_SECRET'], 'HS256'));
+            $secretKey = $_ENV['JWT_SECRET'] ?? 'sua_chave_secreta_super_segura_aqui';
+            $decoded = JWT::decode($jwt, new Key($secretKey, 'HS256'));
 
-            // Retorna os dados que nós colocamos no payload lá no AuthController (sub, role, etc)
             return $decoded;
+
+        } catch (ExpiredException $e) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Sessão expirada. Faça login novamente.']);
+            exit;
+        } catch (SignatureInvalidException $e) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Assinatura do token inválida.']);
+            exit;
         } catch (Exception $e) {
             http_response_code(401);
-            echo json_encode(['error' => 'Token inválido ou expirado: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Token inválido ou não autorizado.']);
             exit;
         }
     }
