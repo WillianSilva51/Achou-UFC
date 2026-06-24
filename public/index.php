@@ -22,8 +22,6 @@ use Controllers\CategoriaController;
 use Controllers\ItemController;
 use Controllers\ReivindicacaoController;
 
-$_ENV['JWT_SECRET'] = $_ENV['JWT_SECRET'] ?? 'sua_chave_secreta_super_segura_aqui';
-
 $request = new Request($_SERVER, $_GET, $_POST);
 $router = new Router($request);
 

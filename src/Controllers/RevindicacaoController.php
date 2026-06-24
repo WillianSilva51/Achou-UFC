@@ -13,7 +13,6 @@ class ReivindicacaoController
     public function store(Request $request): void
     {
         header('Content-Type: application/json');
-
         $usuarioLogado = AuthMiddleware::handle();
 
         if ($usuarioLogado->role !== 'aluno') {
@@ -21,39 +20,54 @@ class ReivindicacaoController
             echo json_encode(['error' => 'Apenas alunos podem reivindicar itens.']);
             return;
         }
+        
 
         $dados = $request->getBody();
+        $item_id = isset($dados['item_id']) ? (int)$dados['item_id'] : 0;
+        $aluno_id = (int)$usuarioLogado->sub;
 
-        if (empty($dados['item_id'])) {
+        if ($item_id <= 0) {
             http_response_code(400);
-            echo json_encode(['error' => 'O ID do item é obrigatório.']);
+            echo json_encode(['error' => 'ID do item é obrigatório.']);
             return;
         }
 
-        $item_id = (int) $dados['item_id'];
-        $aluno_id = (int) $usuarioLogado->sub;
-        
-        $itemModel = new ItemPerdido();
-        $reivindicacaoModel = new Reivindicacao();
+        $pdo = \Core\Database::getConnection();
 
         try {
-            $item = $itemModel->findById($item_id);
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare("SELECT status FROM item_perdido WHERE id = :id FOR UPDATE");
+            $stmt->execute(['id' => $item_id]);
+            $item = $stmt->fetch();
 
             if (!$item) {
+                $pdo->rollBack();
                 http_response_code(404);
                 echo json_encode(['error' => 'Item não encontrado.']);
                 return;
             }
 
             if (strtolower($item['status']) !== 'disponível' && strtolower($item['status']) !== 'disponivel') {
+                $pdo->rollBack();
                 http_response_code(400);
                 echo json_encode(['error' => 'Este item não está mais disponível para reivindicação.']);
                 return;
             }
 
+            if (isset($item['registrado_por']) && $item['registrado_por'] == $aluno_id) {
+                $pdo->rollBack();
+                http_response_code(409); 
+                echo json_encode(['error' => 'Você não pode reivindicar um item que você mesmo registrou no sistema.']);
+                return;
+            }
+
+            $reivindicacaoModel = new \Models\Reivindicacao();
             $data_reivindicacao = date('Y-m-d H:i:s');
             
             $id_reivindicacao = $reivindicacaoModel->registrarPedido($item_id, $aluno_id, $data_reivindicacao);
+
+            $pdo->commit();
 
             http_response_code(201);
             echo json_encode([
@@ -63,19 +77,26 @@ class ReivindicacaoController
             ]);
 
         } catch (\PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            
             if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_reivindicacao_ativa') !== false) {
                 http_response_code(409);
-                echo json_encode([
-                    'error' => 'Calma lá! Você já enviou uma reivindicação para este item e ela está em análise.'
-                ]);
+                echo json_encode(['error' => 'Você já enviou uma reivindicação para este item.']);
                 return;
             }
+            
+            error_log("Erro no banco (Reivindicação): " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Erro no banco de dados ao processar reivindicação.']);
-            
-        } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+        } catch (\Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log("Erro interno (Reivindicação): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao processar a reivindicação.']);
         }
     }
 
@@ -191,7 +212,7 @@ class ReivindicacaoController
 
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno ao processar a avaliação: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Erro interno ao processar a avaliação.']);
         }
     }
 }

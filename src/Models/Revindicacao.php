@@ -125,25 +125,39 @@ class Reivindicacao extends BaseModel
         }
     }
 
-    public function processarAvaliacao(int $reivindicacao_id, string $novo_status, int $item_id, string $status_item): void
+    public function processarAvaliacao(int $id_reivindicacao, int $item_id, string $novo_status): bool
     {
+        $pdo = \Core\Database::getConnection();
+        
         try {
-            $this->db->beginTransaction();
+            $pdo->beginTransaction();
 
-            $sql1 = "UPDATE {$this->table} SET status_reivindicacao = :status WHERE id = :id";
-            $stmt1 = $this->db->prepare($sql1);
-            $stmt1->execute(['id' => $reivindicacao_id, 'status' => $novo_status]);
+            $sql1 = "UPDATE reivindicacao SET status_reivindicacao = :status WHERE id = :id";
+            $stmt1 = $pdo->prepare($sql1);
+            $stmt1->execute(['status' => $novo_status, 'id' => $id_reivindicacao]);
 
-            $sql2 = "UPDATE item_perdido SET status = :status WHERE id = :id";
-            $stmt2 = $this->db->prepare($sql2);
-            $stmt2->execute(['id' => $item_id, 'status' => $status_item]);
+            if ($novo_status === 'aprovado') {
+                
+                $sql2 = "UPDATE reivindicacao 
+                         SET status_reivindicacao = 'recusado' 
+                         WHERE item_id = :item_id 
+                         AND id != :id 
+                         AND status_reivindicacao = 'pendente'";
+                $stmt2 = $pdo->prepare($sql2);
+                $stmt2->execute(['item_id' => $item_id, 'id' => $id_reivindicacao]);
 
-            $this->db->commit();
-        } catch (\Exception $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
+                $sql3 = "UPDATE item_perdido SET status = 'devolvido' WHERE id = :item_id";
+                $stmt3 = $pdo->prepare($sql3);
+                $stmt3->execute(['item_id' => $item_id]);
             }
-            throw $e;
+
+            $pdo->commit();
+            return true;
+            
+        } catch (\Exception $e) {
+            $pdo->rollBack();
+            error_log("Erro Crítico no processarAvaliacao: " . $e->getMessage());
+            throw $e; 
         }
     }
     
