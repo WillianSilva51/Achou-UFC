@@ -18,20 +18,21 @@ class ItemPerdido extends BaseModel
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            'titulo' => $titulo,
-            'descricao' => $descricao,
+            'titulo'          => $titulo,
+            'descricao'       => $descricao,
             'data_encontrado' => $data_encontrado,
-            'status' => $status,
-            'foto_url' => $foto_url,
-            'local_id' => $local_id,
-            'categoria_id' => $categoria_id,
-            'registrado_por' => $registrado_por,
+            'status'          => $status,
+            'foto_url'        => $foto_url,
+            'local_id'        => $local_id,
+            'categoria_id'    => $categoria_id,
+            'registrado_por'  => $registrado_por,
         ]);
         return (int) $stmt->fetchColumn();
     }
+
     public function findAllWithDetails(): array
     {
-        $sql = "SELECT i.id, i.titulo, i.descricao, i.data_encontrado, i.status ,i.foto_url, 
+        $sql = "SELECT i.id, i.titulo, i.descricao, i.data_encontrado, i.status, i.foto_url, 
                        c.nome as categoria, l.nome_local as local, u.nome as registrado_por
                 FROM {$this->table} i
                 INNER JOIN categoria c ON i.categoria_id = c.id
@@ -45,5 +46,31 @@ class ItemPerdido extends BaseModel
         $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         return $resultado ?: [];
+    }
+
+    public function update(int $id, string $titulo, string $descricao, string $data_encontrado, ?string $foto_url, int $local_id, int $categoria_id, string $status): bool
+    {
+        $sql = "UPDATE {$this->table} 
+                SET titulo = :titulo, 
+                    descricao = :descricao, 
+                    data_encontrado = :data_encontrado, 
+                    foto_url = :foto_url, 
+                    local_id = :local_id, 
+                    categoria_id = :categoria_id, 
+                    status = :status 
+                WHERE id = :id";
+
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            'id'              => $id,
+            'titulo'          => $titulo,
+            'descricao'       => $descricao,
+            'data_encontrado' => $data_encontrado,
+            'foto_url'        => $foto_url,
+            'local_id'        => $local_id,
+            'categoria_id'    => $categoria_id,
+            'status'          => $status,
+        ]);
     }
 }

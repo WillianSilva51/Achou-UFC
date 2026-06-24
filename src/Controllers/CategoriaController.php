@@ -35,8 +35,8 @@ class CategoriaController
         $nome = htmlspecialchars(strip_tags($dados['nome']));
 
         try {
-            $id_categoria = new Categoria($nome);
-
+            $id_categoria = new Categoria();
+            $id_categoria = $id_categoria->create($nome);   
             http_response_code(201);
             echo json_encode([
                 'sucesso' => true,
@@ -68,6 +68,106 @@ class CategoriaController
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['Error' => 'Erro ao listar categorias' . $e->getMessage()]);
+        }
+    }
+    public function show(Request $request, int $id): void
+    {
+        header('Content-Type: application/json');
+
+        $categoriaModel = new Categoria();
+
+        try {
+            $categoria = $categoriaModel->findById($id);
+
+            if (!$categoria) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Categoria não encontrada']);
+                return;
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'sucesso' => true,
+                'data' => $categoria,
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao buscar categoria']);
+        }
+    }
+
+    public function update(Request $request, int $id): void
+    {
+        header('Content-Type: application/json');
+
+        $usuarioLogado = AuthMiddleware::handle();
+
+        if ($usuarioLogado->role !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acesso negado, apenas administradores podem atualizar categorias']);
+            return;
+        }
+
+        $dados = $request->getBody();
+
+        if (empty($dados['nome'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'O nome da categoria é obrigatório']);
+            return;
+        }
+
+        $nome = htmlspecialchars(strip_tags($dados['nome']));
+        $categoriaModel = new Categoria();
+
+        try {
+            if (!$categoriaModel->findById($id)) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Categoria não encontrada para atualização']);
+                return;
+            }
+
+            $sucesso = $categoriaModel->update($id, $nome);
+
+            if ($sucesso) {
+                http_response_code(200);
+                echo json_encode(['sucesso' => true, 'message' => 'Categoria atualizada com sucesso']);
+            } else {
+                throw new Exception("Nenhuma alteração foi feita ou falha no banco.");
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['erro' => 'Erro interno ao atualizar a categoria']);
+        }
+    }
+
+    public function destroy(Request $request, int $id): void
+    {
+        header('Content-Type: application/json');
+
+        $usuarioLogado = AuthMiddleware::handle();
+
+        if ($usuarioLogado->role !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acesso negado, apenas administradores podem deletar categorias']);
+            return;
+        }
+
+        $categoriaModel = new Categoria();
+
+        try {
+            if (!$categoriaModel->findById($id)) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Categoria não encontrada para exclusão']);
+                return;
+            }
+
+            $categoriaModel->delete($id);
+
+            http_response_code(200);
+            echo json_encode(['sucesso' => true, 'message' => 'Categoria deletada com sucesso']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao deletar a categoria']);
         }
     }
 }

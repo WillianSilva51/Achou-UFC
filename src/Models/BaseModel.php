@@ -8,30 +8,32 @@ use Core\Database;
 abstract class BaseModel
 {
     protected PDO $db;
-    protected string $table; // Será definida pelas classes filhas
+    protected string $table; 
 
     public function __construct()
     {
+        // Garante que toda classe filha já nasça conectada no banco
         $this->db = Database::getConnection();
     }
 
-    public function findAll(): array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM {$this->table}");
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
+    // Busca cega por ID (Serve para Local, Categoria, Item...)
     public function findById(int $id): ?array
     {
-        $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE id = :id");
+        $sql = "SELECT * FROM {$this->table} WHERE id = :id LIMIT 1";
+        $stmt = $this->db->prepare($sql);
         $stmt->execute(['id' => $id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $resultado !== false ? $resultado : null;
     }
+
+    // Deleta por ID (Serve para Local, Categoria, Item...)
     public function delete(int $id): bool
     {
-        $stmt = $this->db->prepare("DELETE FROM {$this->table} WHERE id = :id");
+        $sql = "DELETE FROM {$this->table} WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        
         return $stmt->execute(['id' => $id]);
     }
 }

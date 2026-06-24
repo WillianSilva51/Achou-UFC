@@ -7,56 +7,41 @@ use Models\Administracao;
 use Models\Aluno;
 use Models\Usuario;
 use Core\Database;
-use PDO;
 use PDOException;
 use Firebase\JWT\JWT;
 use Core\Request;
 
 class AuthController
 {
-    public function register(): void
+    public function register(Request $request): void
     {
         header('Content-Type: application/json');
 
-        $json = file_get_contents('php://input'); // faço requisição pego json completo string
-        $dados = json_decode($json, true); // true ta transformadno em array associativo
+        $dados = $request->getBody();
 
-        if (!$dados || empty($dados['nome']) || empty($dados['email']) || empty($dados['senha'])) {
-            http_response_code(400); // badrequest
-            echo json_encode([
-                'Error' => 'dados incompletos, nome, email, senha são obrigatorios',
-            ], true);
+        if (empty($dados['nome']) || empty($dados['email']) || empty($dados['senha'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Dados incompletos. Nome, email e senha são obrigatórios.']);
             return;
         }
 
-        $nome = htmlspecialchars(strip_tags($dados['nome']));
+        $nome  = htmlspecialchars(strip_tags($dados['nome']));
         $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
         $senha = $dados['senha'];
-        $role = $dados['role'] ?? 'aluno';
+        $role  = $dados['role'] ?? 'aluno';
 
-        if (empty($nome)) {
+        if (!$email) {
             http_response_code(400);
-            echo json_encode([
-                'Error' => 'Nome é um paramtro obrigatorio',
-            ]);
+            echo json_encode(['error' => 'Formato de email inválido.']);
             return;
         }
 
-        if (empty($email)) {
+        if (strlen($senha) < 8) {
             http_response_code(400);
-            echo json_encode([
-                'Error' => 'Email é um parametro obrigatorio',
-            ]);
+            echo json_encode(['error' => 'A senha deve ter no mínimo 8 dígitos.']);
             return;
         }
 
-        if (empty($senha) || strlen($senha) < 8) {
-            http_response_code(400);
-            echo json_encode([
-                'Error' => 'Senha deve ter no minimo 8 digitos',
-            ]);
-            return;
-        }
         $usuarioModel = new Usuario();
         $pdo = Database::getConnection();
 
@@ -67,80 +52,83 @@ class AuthController
 
             if ($role === 'aluno') {
                 if (empty($dados['matricula'])) {
-                    throw new Exception('A matricula é obrigatoria a cada aluno');
+                    throw new Exception('A matrícula é obrigatória para cadastro de aluno.');
                 }
                 $alunoModel = new Aluno();
                 $alunoModel->create($usuarioId, $dados['matricula']);
             } elseif ($role === 'admin') {
                 if (empty($dados['siap'])) {
-                    throw new Exception('Siap é orbigatorio a cada Administrador');
+                    throw new Exception('O SIAPE é obrigatório para cadastro de administrador.');
                 }
                 $adminModel = new Administracao();
                 $adminModel->create($usuarioId, $dados['siap']);
             } else {
-                throw new Exception("Role invalida no sistema");
+                throw new Exception("Role inválida no sistema.");
             }
+            
             $pdo->commit();
 
-            http_response_code(201);// created
+            http_response_code(201);
             echo json_encode([
-                'sucesso' => true,
-                'mensage' => 'Usuario resgitrado com sucesso',
+                'sucesso'    => true,
+                'mensagem'   => 'Usuário registrado com sucesso.',
                 'usuario_id' => $usuarioId,
             ]);
+
         } catch (PDOException $e) {
             $pdo->rollBack();
-            http_response_code(400);
-
+            http_response_code(409);
             echo json_encode([
-                'error' => 'Conflito de dados, email ou siap ja cadastrados',
+                'error' => 'Conflito de dados: Email, Matrícula ou SIAPE já cadastrados.',
+                'debug' => $e->getMessage() 
             ]);
-            error_log('Error de BD no registro ' . $e->getMessage());
-        } catch (PDOException $e) {
-            $pdo->rollBack();
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             http_response_code(400);
-
-            // Agora o Nginx/PHP vai te fofocar o erro exato do banco no seu curl
             echo json_encode([
-                'error' => 'Erro no BD: ' . $e->getMessage(),
+                'error' => $e->getMessage()
             ]);
         }
     }
 
     public function login(Request $request): void
     {
+        header('Content-Type: application/json');
 
         $dados = $request->getBody();
+
         if (empty($dados['email']) || empty($dados['senha'])) {
-            http_response_code(400); // badrequest
-            echo json_encode([
-                'error' => 'Erro ao realizar login ',
-            ]);
+            http_response_code(400);
+            echo json_encode(['error' => 'Email e senha são obrigatórios.']);
             return;
         }
+
         $usuarioModel = new Usuario();
-        $user = $usuarioModel->findbyEmail($dados['email']);
+        $user = $usuarioModel->findByEmail($dados['email']);
 
         if (!$user || !password_verify($dados['senha'], $user['senha'])) {
-            http_response_code(400); // não autorizado
-            echo json_encode(['error' => 'Credenciais invalidas']);
+            echo json_encode(['error' => 'Credenciais inválidas.']);
             return;
         }
+
         $payload = [
-            'iss' => 'achados_e_perdidos_ufc',
-            'iat' => time(),
-            'exp' => time() + (15 * 60),
-            'sub' => $user['id'],
+            'iss'  => 'achados_e_perdidos_ufc',
+            'iat'  => time(),
+            'exp'  => time() + (15 * 60), 
+            'sub'  => $user['id'],
             'role' => $user['role'],
         ];
+
         $jwt = JWT::encode($payload, $_ENV['JWT_SECRET'], 'HS256');
 
         http_response_code(200);
         echo json_encode([
-            'sucess' => true,
-            'token' => $jwt,
+            'sucesso' => true,
+            'token'   => $jwt,
             'usuario' => [
-                'id' => $user['id'],
+                'id'   => $user['id'],
                 'nome' => $user['nome'],
                 'role' => $user['role'],
             ],

@@ -26,6 +26,18 @@ class Categoria extends BaseModel
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
         return $resultado ?: [];
+    }
+
+    public function update(int $id, string $nome): bool
+    {
+        $sql = "UPDATE {$this->table} SET nome = :nome WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            'id'   => $id,
+            'nome' => $nome,
+        ]);
     }
 }
