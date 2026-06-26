@@ -12,7 +12,9 @@ class AuthMiddleware
 {
     public static function handle()
     {
-        $headers = getallheaders();
+        header('Content-Type: application/json');
+
+        $headers    = getallheaders();
         $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
 
         if (!$authHeader) {

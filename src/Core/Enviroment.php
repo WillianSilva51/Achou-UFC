@@ -40,10 +40,9 @@ class Environment
                 // Remove aspas duplas ou simples que envolvam o valor
                 $value = trim($value, '"\'');
 
-                // Injeta nas superglobais do PHP e no ambiente do SO
+                // putenv + $_ENV são suficientes; $_SERVER não recebe segredos
                 putenv(sprintf('%s=%s', $key, $value));
                 $_ENV[$key] = $value;
-                $_SERVER[$key] = $value;
             }
         }
     }
