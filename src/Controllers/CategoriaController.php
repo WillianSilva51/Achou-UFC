@@ -38,7 +38,7 @@ class CategoriaController
         $categoriaModel = new Categoria();
 
         try {
-            $id_categoria = $categoriaModel->create($nome);   
+            $id_categoria = $categoriaModel->create($nome);
             http_response_code(201);
             echo json_encode([
                 'sucesso' => true,
@@ -77,14 +77,15 @@ class CategoriaController
             ]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['Error' => 'Erro interno ao listar categorias.']);
+            echo json_encode(['error' => 'Erro interno ao listar categorias.']);
         }
     }
+
     public function show(Request $request, int $id): void
     {
         header('Content-Type: application/json');
         AuthMiddleware::handle();
-        
+
         $categoriaModel = new Categoria();
 
         try {
@@ -175,7 +176,7 @@ class CategoriaController
                 return;
             }
 
-            $categoriaModel->softDelete($id);
+            $categoriaModel->delete($id);
 
             http_response_code(200);
             echo json_encode(['sucesso' => true, 'message' => 'Categoria deletada com sucesso']);
