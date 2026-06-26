@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Painel — Achou! UFC Quixadá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link href="css/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/components/admin.css">
+    <link rel="stylesheet" href="css/sections/nav.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-ufc">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="admin.html">
+                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" alt="UFC" class="brand-logo">
+                <span class="brand-title">Achou!<span class="accent"> UFC</span> · Painel</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="index.html" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-up-right"></i>
+                    Vitrine</a>
+                <button class="btn btn-sm btn-gold"><i class="bi bi-box-arrow-right"></i>
+                    Sair</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <aside class="col-md-3 col-lg-2 admin-sidebar p-0">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link active" href="#dashboard"><i class="bi bi-speedometer2"></i>
+                            Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cadastrar.html"><i class="bi bi-plus-circle"></i>
+                            Cadastrar item</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#itens"><i class="bi bi-box-seam"></i> Itens
+                            cadastrados</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#reivindicacoes"><i
+                                class="bi bi-hand-index-thumb"></i> Reivindicações</a></li>
+                </ul>
+            </aside>
+
+            <main class="col-md-9 col-lg-10 py-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h4 class="mb-0">Bem-vindo(a) à Recepção</h4>
+                        <small class="text-muted">Gerencie os itens encontrados e as reivindicações dos alunos.</small>
+                    </div>
+                    <a href="cadastrar.html" class="btn btn-ufc"><i class="bi bi-plus-circle"></i> Novo item</a>
+                </div>
+
+                <section id="dashboard" class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card stat-card p-3"><small class="text-muted">Itens totais</small>
+                            <div class="stat-num" id="stat-total">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card stat-card p-3"><small class="text-muted">Disponíveis</small>
+                            <div class="stat-num text-success" id="stat-disp">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card stat-card p-3"><small class="text-muted">Reivindicações</small>
+                            <div class="stat-num text-warning" id="stat-reiv">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card stat-card p-3"><small class="text-muted">Entregues</small>
+                            <div class="stat-num text-secondary" id="stat-entr">0</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="itens" class="card stat-card mb-4">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-box-seam"></i> Itens cadastrados</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Item</th>
+                                        <th>Categoria</th>
+                                        <th>Local</th>
+                                        <th>Data</th>
+                                        <th>Status</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-itens"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="reivindicacoes" class="card stat-card mb-4">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-hand-index-thumb"></i> Reivindicações recebidas</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Item</th>
+                                        <th>Aluno</th>
+                                        <th>E-mail</th>
+                                        <th>Data</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-reiv"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
