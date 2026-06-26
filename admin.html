@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Painel — Achou! UFC Quixadá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link href="css/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/components/admin.css">
+    <link rel="stylesheet" href="css/sections/nav.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-ufc">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="admin.html">
+                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" alt="UFC" class="brand-logo">
+                <span class="brand-title">Achou!<span class="accent"> UFC</span> · Painel</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="index.html" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-up-right"></i>
+                    Vitrine</a>
+                <button class="btn btn-sm btn-gold"><i class="bi bi-box-arrow-right"></i>
+                    Sair</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <aside class="col-md-3 col-lg-2 admin-sidebar p-0">
+                <button class="btn admin-menu-toggle d-md-none" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#admin-menu" aria-expanded="false" aria-controls="admin-menu">
+                    <i class="bi bi-list"></i>
+                    Menu do painel
+                </button>
+                <nav class="collapse d-md-block" id="admin-menu">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link active" href="#dashboard"><i
+                                    class="bi bi-speedometer2"></i>
+                                Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#cadastro-item"><i
+                                    class="bi bi-plus-circle"></i>
+                                Cadastrar item</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#itens"><i class="bi bi-box-seam"></i> Itens
+                                cadastrados</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#reivindicacoes"><i
+                                    class="bi bi-hand-index-thumb"></i> Reivindicações</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="col-md-9 col-lg-10 py-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h4 class="mb-0">Bem-vindo(a) à Recepção</h4>
+                        <small class="text-muted">Gerencie os itens encontrados e as reivindicações dos alunos.</small>
+                    </div>
+                    <a href="#cadastro-item" class="btn btn-ufc admin-scroll-link"><i class="bi bi-plus-circle"></i>
+                        Novo item</a>
+                </div>
+
+                <section id="dashboard" class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card stat-card p-3"><small class="text-muted">Itens totais</small>
+                            <div class="stat-num" id="stat-total">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card stat-card p-3"><small class="text-muted">Disponíveis</small>
+                            <div class="stat-num text-success" id="stat-disp">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card stat-card p-3"><small class="text-muted">Reivindicações</small>
+                            <div class="stat-num text-warning" id="stat-reiv">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card stat-card p-3"><small class="text-muted">Entregues</small>
+                            <div class="stat-num text-secondary" id="stat-entr">0</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="cadastro-item" class="card stat-card mb-4 admin-section">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                            <div>
+                                <h6 class="mb-1"><i class="bi bi-plus-circle"></i> Cadastrar item encontrado</h6>
+                                <small class="text-muted">O item ficará disponível para reivindicação na vitrine.</small>
+                            </div>
+                            <span class="badge text-bg-light border">
+                                <i class="bi bi-person-check"></i>
+                                Registrado pelo admin logado
+                            </span>
+                        </div>
+
+                        <div id="cadastro-alerta" class="alert d-none" role="alert"></div>
+
+                        <form id="form-item" class="needs-validation" novalidate>
+                            <div class="row g-3">
+                                <div class="col-12 col-lg-7">
+                                    <label for="item-titulo" class="form-label">Título</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                                        <input type="text" class="form-control" id="item-titulo" name="titulo"
+                                            minlength="3" maxlength="255" required placeholder="Ex: Garrafa azul">
+                                        <div class="invalid-feedback">Informe um título com pelo menos 3 caracteres.</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="item-data" class="form-label">Data encontrada</label>
+                                    <input type="date" class="form-control" id="item-data" name="data_encontrado"
+                                        required>
+                                    <div class="invalid-feedback">Informe a data em que o item foi encontrado.</div>
+                                </div>
+
+                                <div class="col-12 col-sm-6 col-lg-2">
+                                    <label for="item-status" class="form-label">Status</label>
+                                    <select class="form-select" id="item-status" name="status">
+                                        <option value="disponível" selected>Disponível</option>
+                                        <option value="em_analise">Em análise</option>
+                                        <option value="devolvido">Devolvido</option>
+                                        <option value="arquivado">Arquivado</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12 col-lg-6">
+                                    <label for="item-local" class="form-label">Local</label>
+                                    <select class="form-select" id="item-local" name="local_id" required>
+                                        <option value="" selected>Selecione o local</option>
+                                    </select>
+                                    <div class="invalid-feedback">Selecione o local onde o item foi encontrado.</div>
+                                </div>
+
+                                <div class="col-12 col-lg-6">
+                                    <label for="item-categoria" class="form-label">Categoria</label>
+                                    <select class="form-select" id="item-categoria" name="categoria_id" required>
+                                        <option value="" selected>Selecione a categoria</option>
+                                    </select>
+                                    <div class="invalid-feedback">Selecione uma categoria.</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="item-foto" class="form-label">Foto</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-image"></i></span>
+                                        <input type="url" class="form-control" id="item-foto" name="foto_url"
+                                            placeholder="https://exemplo.com/foto-do-item.jpg">
+                                        <div class="invalid-feedback">Informe uma URL válida para a foto.</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="item-descricao" class="form-label">Descrição</label>
+                                    <textarea class="form-control" id="item-descricao" name="descricao" rows="4"
+                                        maxlength="5000"
+                                        placeholder="Descreva cor, marca, detalhes e onde foi encontrado."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
+                                <button type="reset" class="btn btn-outline-secondary">
+                                    <i class="bi bi-eraser"></i>
+                                    Limpar
+                                </button>
+                                <button type="submit" class="btn btn-ufc">
+                                    <i class="bi bi-save"></i>
+                                    Salvar item
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <section id="itens" class="card stat-card mb-4">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-box-seam"></i> Itens cadastrados</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Item</th>
+                                        <th>Categoria</th>
+                                        <th>Local</th>
+                                        <th>Data</th>
+                                        <th>Status</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-itens"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="reivindicacoes" class="card stat-card mb-4">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-hand-index-thumb"></i> Reivindicações recebidas</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Item</th>
+                                        <th>Aluno</th>
+                                        <th>E-mail</th>
+                                        <th>Data</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-reiv"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+    <script>
+        const adminLinks = document.querySelectorAll('.admin-sidebar .nav-link, .admin-scroll-link');
+        const sidebarLinks = document.querySelectorAll('.admin-sidebar .nav-link');
+        const sections = document.querySelectorAll('#dashboard, #cadastro-item, #itens, #reivindicacoes');
+        const menuCollapse = document.getElementById('admin-menu');
+        const formItem = document.getElementById('form-item');
+        const alerta = document.getElementById('cadastro-alerta');
+        const dataEncontrado = document.getElementById('item-data');
+        const categoriaSelect = document.getElementById('item-categoria');
+        const localSelect = document.getElementById('item-local');
+
+        function getAuthToken() {
+            return localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+        }
+
+        function mostrarAlerta(tipo, mensagem) {
+            alerta.className = `alert alert-${tipo}`;
+            alerta.textContent = mensagem;
+        }
+
+        function setActiveLink(id) {
+            sidebarLinks.forEach((link) => {
+                link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+            });
+        }
+
+        function preencherSelect(select, itens, getLabel) {
+            const primeiraOpcao = select.querySelector('option');
+            select.innerHTML = '';
+            select.appendChild(primeiraOpcao);
+
+            itens.forEach((item) => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = getLabel(item);
+                select.appendChild(option);
+            });
+        }
+
+        async function carregarOpcoes() {
+            const token = getAuthToken();
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            try {
+                const [categoriasResponse, locaisResponse] = await Promise.all([
+                    fetch('/api/categorias', { headers }),
+                    fetch('/api/locais', { headers }),
+                ]);
+
+                if (!categoriasResponse.ok || !locaisResponse.ok) {
+                    throw new Error('Não foi possível carregar locais e categorias.');
+                }
+
+                const categoriasJson = await categoriasResponse.json();
+                const locaisJson = await locaisResponse.json();
+
+                preencherSelect(categoriaSelect, categoriasJson.data || categoriasJson, (categoria) => categoria.nome);
+                preencherSelect(localSelect, locaisJson.data || locaisJson, (local) => local.nome_local);
+            } catch (error) {
+                mostrarAlerta('warning', 'Cadastre ou carregue locais e categorias antes de salvar um item.');
+            }
+        }
+
+        adminLinks.forEach((link) => {
+            link.addEventListener('click', (event) => {
+                const targetId = link.getAttribute('href');
+
+                if (!targetId || !targetId.startsWith('#')) return;
+
+                const target = document.querySelector(targetId);
+                if (!target) return;
+
+                event.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setActiveLink(target.id);
+
+                if (menuCollapse.classList.contains('show')) {
+                    bootstrap.Collapse.getOrCreateInstance(menuCollapse).hide();
+                }
+            });
+        });
+
+        const observer = new IntersectionObserver((entries) => {
+            const visible = entries
+                .filter((entry) => entry.isIntersecting)
+                .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+            if (visible) setActiveLink(visible.target.id);
+        }, { rootMargin: '-20% 0px -65% 0px', threshold: [0.1, 0.4, 0.7] });
+
+        sections.forEach((section) => observer.observe(section));
+
+        dataEncontrado.max = new Date().toISOString().split('T')[0];
+        dataEncontrado.value = dataEncontrado.max;
+
+        formItem.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            if (!formItem.checkValidity()) {
+                event.stopPropagation();
+                formItem.classList.add('was-validated');
+                return;
+            }
+
+            const token = getAuthToken();
+            if (!token) {
+                mostrarAlerta('warning', 'Faça login como admin antes de cadastrar um item.');
+                return;
+            }
+
+            const payload = Object.fromEntries(new FormData(formItem).entries());
+
+            try {
+                const response = await fetch('/api/itens', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Não foi possível cadastrar o item.');
+                }
+
+                mostrarAlerta('success', data.mensagem || 'Item registrado com sucesso.');
+                formItem.reset();
+                formItem.classList.remove('was-validated');
+                dataEncontrado.value = dataEncontrado.max;
+            } catch (error) {
+                mostrarAlerta('danger', error.message);
+            }
+        });
+
+        carregarOpcoes();
+    </script>
+</body>
+
+</html>
