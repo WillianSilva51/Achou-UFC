@@ -1,0 +1,38 @@
+.admin-sidebar {
+  background: var(--ufc-blue);
+  color: #fff;
+  min-height: calc(100vh - 72px);
+  padding: 1.25rem 0;
+}
+.admin-sidebar .nav-link {
+  color: #dfe7f0;
+  border-radius: 0;
+  padding: 0.7rem 1.25rem;
+}
+.admin-sidebar .nav-link.active,
+.admin-sidebar .nav-link:hover {
+  background: var(--ufc-blue-dark);
+  color: #fff;
+  border-left: 4px solid var(--ufc-gold);
+}
+
+.stat-card {
+  border-radius: 14px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+.stat-card .stat-num {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ufc-blue);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+.empty-state i {
+  font-size: 3rem;
+  color: #c3cad3;
+}

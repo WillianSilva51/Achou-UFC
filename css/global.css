@@ -17,3 +17,23 @@ html,
 body {
   height: 100%;
 }
+
+.btn-ufc {
+  background: var(--ufc-blue);
+  color: #fff;
+  border: none;
+}
+.btn-ufc:hover {
+  background: var(--ufc-blue-dark);
+  color: #fff;
+}
+.btn-gold {
+  background: var(--ufc-gold);
+  color: #222;
+  border: none;
+  font-weight: 600;
+}
+.btn-gold:hover {
+  background: #e3a51e;
+  color: #222;
+}
