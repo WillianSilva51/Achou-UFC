@@ -1,48 +1,23 @@
 .admin-sidebar {
   background: var(--ufc-blue);
   color: #fff;
-  min-height: calc(100vh - 64px);
-  padding: 1rem 0;
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-  z-index: 10;
+  min-height: calc(100vh - 72px);
+  padding: 1.25rem 0;
 }
 .admin-sidebar .nav-link {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
   color: #dfe7f0;
-  border-left: 4px solid transparent;
-  border-radius: 0 999px 999px 0;
-  margin-right: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  border-radius: 0;
+  padding: 0.7rem 1.25rem;
 }
 .admin-sidebar .nav-link.active,
 .admin-sidebar .nav-link:hover {
   background: var(--ufc-blue-dark);
   color: #fff;
-  border-left-color: var(--ufc-gold);
-  transform: translateX(2px);
-}
-
-.admin-menu-toggle {
-  width: calc(100% - 1.5rem);
-  margin: 0 0.75rem 0.75rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.admin-menu-toggle:hover,
-.admin-menu-toggle:focus {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  border-left: 4px solid var(--ufc-gold);
 }
 
 .stat-card {
-  border-radius: 8px;
+  border-radius: 14px;
   border: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
@@ -60,26 +35,4 @@
 .empty-state i {
   font-size: 3rem;
   color: #c3cad3;
-}
-
-.admin-section {
-  scroll-margin-top: 1rem;
-}
-
-@media (max-width: 767.98px) {
-  .admin-sidebar {
-    min-height: auto;
-    position: sticky;
-    top: 0;
-    padding: 0.75rem 0;
-  }
-
-  .admin-sidebar .nav {
-    padding-bottom: 0.25rem;
-  }
-
-  .admin-sidebar .nav-link {
-    border-radius: 8px;
-    margin: 0 0.75rem 0.35rem;
-  }
 }
