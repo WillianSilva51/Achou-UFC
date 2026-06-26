@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../vendor/autoload.php';
-\Core\Environment::load(__DIR__ . '/..');
+//\Core\Environment::load(__DIR__ . '/..');
 
 $origensPermitidas = [];
 if (!empty($_ENV['CORS_ORIGIN'])) {

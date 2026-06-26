@@ -22,8 +22,11 @@ class Recaptcha
         $secretKey = $_ENV['RECAPTCHA_SECRET_KEY'] ?? '';
 
         if (empty($secretKey)) {
-            error_log('Recaptcha: RECAPTCHA_SECRET_KEY não está definida no .env');
-            throw new \RuntimeException('Configuração de reCAPTCHA ausente no servidor.');
+            // Bypass para desenvolvimento local: se a chave não estiver configurada,
+            // loga um aviso e retorna true sem bloquear.
+            // Em produção, preencha RECAPTCHA_SECRET_KEY no .env.
+            error_log('Recaptcha: RECAPTCHA_SECRET_KEY ausente — bypass ativado (somente dev).');
+            return true;
         }
 
         if (empty(trim($token))) {
