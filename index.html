@@ -20,11 +20,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/components/footer.css">
     <link rel="stylesheet" href="css/components/header.css">
     <link rel="stylesheet" href="css/components/main.css">
     <link rel="stylesheet" href="css/sections/nav.css">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/global.css">
+    <script type="module" src="js/main.js" defer></script>
+    <script src="js/theme.js" defer></script>
     <title>Achou! UFC</title>
 </head>
 
@@ -33,20 +36,48 @@
         <div class="container">
             <a href="#" class="navbar-brand d-flex align-items-center gap-2">
                 <img src="assets/images/Brasao4_vertical_cor_300dpi.png" class="brand-logo" alt="Logo da UFC">
-                <span class="brand-title">Achou! <span class="accent"> UFC</span></span>
+
+                <span class="brand-title">
+                    Achou! <span class="accent">UFC</span>
+                </span>
             </a>
-            <button class="navbar-toggler">
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#nav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto align-items-center gap-lg-1">
-                    <li class="nav-item"><a href="#vitrine" class="nav-link active"><i class="bi bi-grid-3x3-gap"></i>
-                            Vitrine</a></li>
-                    <li><a href="#como-funciona" class="nav-link active"><i class="bi bi-info-circle"></i> Como
-                            Funciona</a></li>
-                    <li><a href="login.html" class="nav-link active"><i class="bi bi-shield-lock"></i> Área da
-                            Recepção</a></li>
-                </ul>
+
+            <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="nav">
+
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title">Menu</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+                </div>
+
+                <div class="offcanvas-body">
+                    <ul class="navbar-nav ms-auto gap-2">
+                        <li class="nav-item">
+                            <a href="#vitrine" class="nav-link">
+                                <i class="bi bi-grid-3x3-gap"></i>
+                                Vitrine
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="#como-funciona" class="nav-link">
+                                <i class="bi bi-info-circle"></i>
+                                Como Funciona
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="login.html" class="nav-link">
+                                <i class="bi bi-shield-lock"></i>
+                                Login
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
             </div>
         </div>
     </nav>
@@ -63,11 +94,79 @@
         </div>
     </header>
     <main class="container py-4">
-        <section>
-            <!--Form para filtrar-->
+        <section class="filters-card mb-4">
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="form-label small mb-1">Buscar</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input id="f-busca" type="text" class="form-control"
+                            placeholder="Ex: chave, garrafa, carteira…">
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-1">Categoria</label>
+                    <select id="f-categoria" class="form-select"></select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-1">Bloco</label>
+                    <select id="f-local" class="form-select"></select>
+                </div>
+                <div class="col-8 col-md-2">
+                    <label class="form-label small mb-1">Data</label>
+                    <input id="f-data" type="date" class="form-control">
+                </div>
+                <div class="col-4 col-md-2">
+                    <button id="btn-limpar" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i>
+                        Limpar</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Itens encontrados <span class="text-muted">(<span id="total-itens">0</span>)</span></h5>
+        </div>
+
+
+        <section id="como-funciona" class="mt-5 pt-3">
+            <h4 class="mb-3">Como funciona</h4>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 h-100 shadow-sm">
+                        <div class="text-primary mb-2"><i class="bi bi-1-circle-fill fs-3"></i></div>
+                        <h6>Encontre na vitrine</h6>
+                        <p class="small text-muted mb-0">Use os filtros por categoria, bloco e data para localizar o seu
+                            objeto rapidamente.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 h-100 shadow-sm">
+                        <div class="text-primary mb-2"><i class="bi bi-2-circle-fill fs-3"></i></div>
+                        <h6>Reivindique online</h6>
+                        <p class="small text-muted mb-0">Preencha o formulário com nome, matrícula e contato. A recepção
+                            valida sua solicitação.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 h-100 shadow-sm">
+                        <div class="text-primary mb-2"><i class="bi bi-3-circle-fill fs-3"></i></div>
+                        <h6>Retire na recepção</h6>
+                        <p class="small text-muted mb-0">Apresente seu documento de estudante na portaria principal e
+                            leve seu item de volta.</p>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
-    <footer></footer>
+    <footer class="footer mt-auto">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <figure class="d-flex align-items-center gap-2">
+                <img src="assets/images/brasao1_horizontal_cor_72dpi.png" alt="Logo da UFC">
+                <figcaption>Setor de Recepção e Vigilância — Campus Quixadá</figcaption>
+            </figure>
+            <small>&copy 2026 Achou! UFC · Projeto de Extensão Universitária</small>
+        </div>
+    </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>
