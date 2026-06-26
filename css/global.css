@@ -18,6 +18,18 @@ body {
   height: 100%;
 }
 
+.auth-card {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.auth-card:hover {
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.28);
+  transform: translateY(-6px);
+}
+
 .btn-ufc {
   background: var(--ufc-blue);
   color: #fff;
