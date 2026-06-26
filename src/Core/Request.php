@@ -11,8 +11,8 @@ class Request
     public function __construct(array $server, array $get, array $post)
     {
         $this->server = $server;
-        $this->get = $get;
-        $this->post = $post;
+        $this->get    = $get;
+        $this->post   = $post;
     }
 
     public function getMethod(): string
@@ -40,8 +40,39 @@ class Request
         return $this->get;
     }
 
+ 
     public function getBody(): array
     {
-        return json_decode(file_get_contents("php://input"), true) ?? $this->post;
+        $method = $this->getMethod();
+
+        if (in_array($method, ['GET', 'HEAD', 'DELETE', 'OPTIONS'], true)) {
+            return [];
+        }
+
+        $contentType = $this->server['CONTENT_TYPE'] ?? '';
+
+        if (str_contains($contentType, 'application/json')) {
+            $raw = file_get_contents('php://input');
+
+            if ($raw === '' || $raw === false) {
+                return [];
+            }
+
+            $decoded = json_decode($raw, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                header('Content-Type: application/json');
+                http_response_code(400);
+                echo json_encode([
+                    'error'  => 'O corpo da requisição contém JSON inválido.',
+                    'detail' => json_last_error_msg(),
+                ]);
+                exit;
+            }
+
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return $this->post;
     }
 }
