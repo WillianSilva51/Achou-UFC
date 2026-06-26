@@ -1,0 +1,15 @@
+.footer {
+  background: var(--ufc-blue-dark);
+  color: #cfd8e3;
+  padding: 1.25rem 0;
+  margin-top: 2rem;
+  border-top: 4px solid var(--ufc-gold);
+  font-size: 0.9rem;
+}
+
+footer figure img {
+  height: 36px;
+  background: #fff;
+  padding: 4px;
+  border-radius: 4px;
+}

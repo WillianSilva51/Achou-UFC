@@ -174,3 +174,4 @@ testa_banco.php
 # arquivos sensíveis (se tiver)
 .env
 .php-cs-fixer.cache
+*.zip

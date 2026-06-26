@@ -2,28 +2,43 @@
 
 namespace Models;
 
+use Models\BaseModel;
+use PDO;
+
 class Administracao extends BaseModel
 {
-    // Define a tabela do banco
     protected string $table = 'administracao';
 
-
-    public function create(int $usuarioId, string $siap): bool
+    public function create(int $id, string $siap): bool
     {
         $sql = "INSERT INTO {$this->table} (id, siap) VALUES (:id, :siap)";
         $stmt = $this->db->prepare($sql);
 
         return $stmt->execute([
-            'id' => $usuarioId,
+            'id'   => $id,
+            'siap' => $siap,
+        ]);
+    }
+
+    public function update(int $id, string $siap): bool
+    {
+        $sql = "UPDATE {$this->table} SET siap = :siap WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            'id'   => $id,
             'siap' => $siap,
         ]);
     }
 
     public function siapeExists(string $siap): bool
     {
-        $stmt = $this->db->prepare("SELECT 1 FROM {$this->table} WHERE siap = :siap");
-        $stmt->execute(['siap' => $siap]);
+        $sql = "SELECT 1 FROM {$this->table} WHERE siap = :siap LIMIT 1";
+        $stmt = $this->db->prepare($sql);
 
+        $stmt->execute([
+            'siap' => $siap,
+        ]);
 
         return (bool) $stmt->fetchColumn();
     }
