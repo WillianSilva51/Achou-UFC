@@ -42,15 +42,47 @@ class AuthController
             return;
         }
 
-        if (
-            empty($dados['nome'])      ||
-            empty($dados['email'])     ||
-            empty($dados['senha'])     ||
-            empty($dados['matricula'])
-        ) {
+        if (empty($dados['nome']) || empty($dados['email']) || empty($dados['senha']) || empty($dados['role'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'Dados incompletos. Nome, email, senha e matrícula são obrigatórios.']);
+            echo json_encode(['error' => 'Nome, email, senha e role são obrigatórios.']);
             return;
+        }
+
+        $role = strtolower(trim($dados['role']));
+        if (!in_array($role, ['admin', 'aluno'], true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Role inválida. Utilize apenas admin ou aluno.']);
+            return;
+        }
+
+        $matricula = null;
+        $siap = null;
+
+        if ($role === 'aluno') {
+            if (empty($dados['matricula'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'A matrícula é obrigatória para alunos.']);
+                return;
+            }
+            $matricula = trim(preg_replace('/\s+/', '', $dados['matricula']));
+            if (!preg_match('/^\d{6,12}$/', $matricula)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Formato de matrícula inválido. Use apenas números (6 a 12 dígitos).']);
+                return;
+            }
+        } elseif ($role === 'admin') {
+            $rawSiap = $dados['siap'] ?? $dados['siape'] ?? ''; // plmds ne? resolver isso aqui calebe
+            if (empty($rawSiap)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'O SIAP/SIAPE é obrigatório para administradores.']);
+                return;
+            }
+            $siap = trim(preg_replace('/\s+/', '', $rawSiap));
+            if (!preg_match('/^\d{6,9}$/', $siap)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Formato de SIAP inválido. Use apenas números (6 a 9 dígitos).']);
+                return;
+            }
         }
 
         if (strlen($dados['senha']) < 8 || strlen($dados['senha']) > 72) {
@@ -69,33 +101,30 @@ class AuthController
         $nome  = htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8');
         $senha = $dados['senha'];
 
-        $matricula = trim(preg_replace('/\s+/', '', $dados['matricula']));
-        if (!preg_match('/^\d{6,12}$/', $matricula)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Formato de matrícula inválido. Use apenas números (6 a 12 dígitos).']);
-            return;
-        }
-
         if (mb_strlen($nome) < 3 || mb_strlen($nome) > 150) {
             http_response_code(400);
             echo json_encode(['error' => 'O nome deve ter entre 3 e 150 caracteres.']);
             return;
         }
 
-        $role = 'aluno';
-
-        $usuarioModel = new Usuario();
-        $pdo = Database::getConnection();
+        $usuarioModel = new \Models\Usuario();
+        $pdo = \Core\Database::getConnection();
 
         try {
             $pdo->beginTransaction();
 
             $usuarioId = $usuarioModel->create($nome, $email, $senha, $role);
 
-            $alunoModel = new Aluno();
-            $alunoModel->create($usuarioId, $matricula);
+            if ($role === 'aluno') {
+                $alunoModel = new \Models\Aluno();
+                $alunoModel->create($usuarioId, $matricula);
+            } elseif ($role === 'admin') {
+                $adminModel = new \Models\Administracao();
+                $adminModel->create($usuarioId, (int)$siap);
+            }
 
             $pdo->commit();
+
 
             http_response_code(201);
             echo json_encode([
