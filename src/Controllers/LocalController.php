@@ -60,7 +60,6 @@ class LocalController
     {
         header('Content-Type: application/json');
 
-        // 🛡️ FECHANDO A ROTA DE LISTAGEM
         AuthMiddleware::handle();
 
         $localModel = new Local();

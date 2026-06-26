@@ -21,8 +21,8 @@ class UsuarioController
         }
 
         $query = $request->getQuery();
-        
-        $page  = isset($query['page']) ? (int) $query['page'] : 1;
+
+        $page  = isset($query['page'])  ? (int) $query['page']  : 1;
         $limit = isset($query['limit']) ? (int) $query['limit'] : 20;
 
         if ($page < 1) $page = 1;
@@ -31,9 +31,12 @@ class UsuarioController
         $offset = ($page - 1) * $limit;
 
         $filtros = [];
-        
+
         if (!empty($query['role'])) {
-            $filtros['role'] = htmlspecialchars(strip_tags($query['role']), ENT_QUOTES, 'UTF-8');
+            $roleQuery = strtolower(htmlspecialchars(strip_tags($query['role']), ENT_QUOTES, 'UTF-8'));
+            if (in_array($roleQuery, ['admin', 'aluno'], true)) {
+                $filtros['role'] = $roleQuery;
+            }
         }
         if (!empty($query['busca'])) {
             $filtros['busca'] = htmlspecialchars(strip_tags($query['busca']), ENT_QUOTES, 'UTF-8');
@@ -42,9 +45,9 @@ class UsuarioController
         $usuarioModel = new Usuario();
 
         try {
-            $total = $usuarioModel->countFiltered($filtros);
+            $total    = $usuarioModel->countFiltered($filtros);
             $usuarios = $usuarioModel->findAll($limit, $offset, $filtros);
-            
+
             http_response_code(200);
             echo json_encode([
                 'sucesso'   => true,
@@ -52,21 +55,22 @@ class UsuarioController
                     'total_registros'   => $total,
                     'pagina_atual'      => $page,
                     'limite_por_pagina' => $limit,
-                    'total_paginas'     => ceil($total / $limit)
+                    'total_paginas'     => (int) ceil($total / $limit),
                 ],
                 'filtros_aplicados' => $filtros,
-                'data' => $usuarios,
+                'data'              => $usuarios,
             ]);
         } catch (Exception $e) {
+            error_log('Erro ao listar usuários: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao buscar usuários.']);
         }
     }
 
-   public function update(Request $request, int $id): void
+    public function update(Request $request, int $id): void
     {
         header('Content-Type: application/json');
-        
+
         $usuarioLogado = AuthMiddleware::handle();
 
         if ($usuarioLogado->role !== 'admin') {
@@ -84,14 +88,8 @@ class UsuarioController
         }
 
         $nome  = htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8');
-        $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL); 
+        $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
         $role  = strtolower(htmlspecialchars(strip_tags($dados['role']), ENT_QUOTES, 'UTF-8'));
-
-        if ($id == $usuarioLogado->sub && $role !== $usuarioLogado->role) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Você não tem permissão para alterar o seu próprio nível de acesso.']);
-            return;
-        }
 
         if (!$email) {
             http_response_code(400);
@@ -99,9 +97,21 @@ class UsuarioController
             return;
         }
 
-        if (!in_array($role, ['admin', 'aluno'])) {
+        if (!in_array($role, ['admin', 'aluno'], true)) {
             http_response_code(400);
             echo json_encode(['error' => 'Role inválida. Use "admin" ou "aluno".']);
+            return;
+        }
+
+        if ($id === (int) $usuarioLogado->sub && $role !== $usuarioLogado->role) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Você não tem permissão para alterar o seu próprio nível de acesso.']);
+            return;
+        }
+
+        if (mb_strlen($nome) < 3 || mb_strlen($nome) > 150) {
+            http_response_code(400);
+            echo json_encode(['error' => 'O nome deve ter entre 3 e 150 caracteres.']);
             return;
         }
 
@@ -114,17 +124,20 @@ class UsuarioController
                 http_response_code(200);
                 echo json_encode(['sucesso' => true, 'mensagem' => 'Usuário atualizado com sucesso.']);
             } else {
-                throw new Exception("Falha ao atualizar ou nenhuma alteração foi feita.");
+                http_response_code(404);
+                echo json_encode(['error' => 'Usuário não encontrado ou nenhuma alteração foi necessária.']);
             }
         } catch (\PDOException $e) {
-            if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_usuario_email') !== false) {
+            if ($e->getCode() == 23505 || str_contains($e->getMessage(), 'uq_usuario_email')) {
                 http_response_code(409);
                 echo json_encode(['error' => 'Este e-mail já está sendo utilizado por outro usuário.']);
                 return;
             }
+            error_log('Erro de BD ao atualizar usuário: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao atualizar usuário.']);
         } catch (Exception $e) {
+            error_log('Erro ao atualizar usuário: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao processar a atualização.']);
         }
@@ -133,45 +146,50 @@ class UsuarioController
     public function updatePassword(Request $request, int $id): void
     {
         header('Content-Type: application/json');
-        
+
         $usuarioLogado = AuthMiddleware::handle();
-        $dados = $request->getBody();
-        if (strlen($dados['senha']) < 8 || strlen($dados['senha']) > 72) {
+        $dados         = $request->getBody();
+
+        if (empty($dados['nova_senha'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'A senha deve ter entre 8 e 72 caracteres.']);
+            echo json_encode(['error' => 'O campo nova_senha é obrigatório.']);
             return;
         }
-        if (empty($dados['nova_senha']) || strlen($dados['nova_senha']) < 8) {
+
+        if (strlen($dados['nova_senha']) < 8 || strlen($dados['nova_senha']) > 72) {
             http_response_code(400);
-            echo json_encode(['error' => 'A nova senha deve ter no mínimo 8 caracteres.']);
+            echo json_encode(['error' => 'A nova senha deve ter entre 8 e 72 caracteres.']);
             return;
         }
 
         $usuarioModel = new Usuario();
 
         try {
-            $userAlvo = $usuarioModel->findById($id);
+            $userAlvo = $usuarioModel->findByIdComSenha($id);
             if (!$userAlvo) {
                 http_response_code(404);
                 echo json_encode(['error' => 'Usuário não encontrado.']);
                 return;
             }
 
-            if ($usuarioLogado->sub == $id) {
-                if (empty($dados['senha_atual']) || !password_verify($dados['senha_atual'], $userAlvo['senha'])) {
-                    http_response_code(401);
-                    echo json_encode(['error' => 'A senha atual está incorreta ou não foi informada.']);
+            if ((int) $usuarioLogado->sub === $id) {
+                if (empty($dados['senha_atual'])) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'A senha atual é obrigatória para alterar sua própria senha.']);
                     return;
                 }
-            } 
-
-            else {
+                if (!password_verify($dados['senha_atual'], $userAlvo['senha'])) {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'A senha atual está incorreta.']);
+                    return;
+                }
+            } else {
                 if ($usuarioLogado->role !== 'admin') {
                     http_response_code(403);
                     echo json_encode(['error' => 'Você não tem permissão para alterar a senha de outro usuário.']);
                     return;
                 }
-                
+
                 if ($userAlvo['role'] === 'admin') {
                     http_response_code(403);
                     echo json_encode(['error' => 'Um administrador não pode resetar a senha de outro administrador.']);
@@ -184,7 +202,7 @@ class UsuarioController
                     return;
                 }
 
-                $adminUser = $usuarioModel->findById($usuarioLogado->sub);
+                $adminUser = $usuarioModel->findByIdComSenha((int) $usuarioLogado->sub);
                 if (!$adminUser || !password_verify($dados['senha_admin'], $adminUser['senha'])) {
                     http_response_code(403);
                     echo json_encode(['error' => 'Senha do administrador incorreta. Acesso negado.']);
@@ -197,10 +215,10 @@ class UsuarioController
                 http_response_code(200);
                 echo json_encode(['sucesso' => true, 'mensagem' => 'Senha atualizada com sucesso.']);
             } else {
-                throw new Exception("Falha ao atualizar a senha no banco.");
+                throw new Exception('Falha ao atualizar a senha no banco.');
             }
         } catch (Exception $e) {
-            error_log("Erro no updatePassword: " . $e->getMessage());
+            error_log('Erro no updatePassword: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao atualizar a senha.']);
         }
