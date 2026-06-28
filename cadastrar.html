@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cadastrar item — Achou! UFC Quixadá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link href="css/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/components/admin.css">
+    <link rel="stylesheet" href="css/sections/nav.css">
+</head>
+
+<body>
+    <script src="js/auth.js"></script>
+    <script>requireAuth();</script>
+
+    <nav class="navbar navbar-expand-lg navbar-ufc">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="admin.html">
+                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" alt="UFC" class="brand-logo">
+                <span class="brand-title">Achou!<span class="accent"> UFC</span> · Cadastrar item</span>
+            </a>
+            <div class="d-flex gap-2">
+                <a href="admin.html" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-left"></i> Painel</a>
+                <button class="btn btn-sm btn-gold" onclick="logout()"><i class="bi bi-box-arrow-right"></i>
+                    Sair</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <h5 class="mb-3"><i class="bi bi-plus-circle text-primary"></i> Cadastrar novo item encontrado
+                        </h5>
+
+                        <form id="form-item" class="needs-validation" novalidate>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Título *</label>
+                                    <input name="titulo" type="text" class="form-control" required minlength="3"
+                                        maxlength="120" placeholder="Ex: Chave com chaveiro azul">
+                                    <div class="invalid-feedback">Informe o título (mín. 3 caracteres).</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Descrição *</label>
+                                    <textarea name="descricao" class="form-control" rows="3" required minlength="5"
+                                        maxlength="500"
+                                        placeholder="Detalhes que ajudem o dono a identificar"></textarea>
+                                    <div class="invalid-feedback">Adicione uma descrição.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Categoria *</label>
+                                    <select name="categoria_id" id="sel-cat" class="form-select" required></select>
+                                    <div class="invalid-feedback">Selecione uma categoria.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Local encontrado *</label>
+                                    <select name="local_id" id="sel-loc" class="form-select" required></select>
+                                    <div class="invalid-feedback">Selecione o local.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Data *</label>
+                                    <input name="data_encontrado" type="date" class="form-control" required>
+                                    <div class="invalid-feedback">Informe a data.</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Foto (opcional)</label>
+                                    <input name="foto" type="file" class="form-control" accept="image/*">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-ufc"><i class="bi bi-save"></i> Cadastrar</button>
+                                <a href="admin.html" class="btn btn-outline-secondary">Cancelar</a>
+                            </div>
+                        </form>
+
+                        <div id="ok-msg" class="alert alert-success mt-3 d-none">
+                            <i class="bi bi-check-circle-fill"></i> Item cadastrado com sucesso!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const selCat = document.getElementById('sel-cat');
+        const selLoc = document.getElementById('sel-loc');
+        selCat.innerHTML = '<option value="">Selecione...</option>' + CATEGORIAS.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        selLoc.innerHTML = '<option value="">Selecione...</option>' + LOCAIS.map(l => `<option value="${l.id}">${l.nome_bloco}</option>`).join('');
+        document.querySelector('input[name=data_encontrado]').value = new Date().toISOString().slice(0, 10);
+
+        document.getElementById('form-item').addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!this.checkValidity()) { this.classList.add('was-validated'); return; }
+            const fd = new FormData(this);
+            const itens = getItens();
+            const novo = {
+                id: nextId(itens),
+                titulo: fd.get('titulo'),
+                descricao: fd.get('descricao'),
+                categoria_id: parseInt(fd.get('categoria_id'), 10),
+                local_id: parseInt(fd.get('local_id'), 10),
+                data_encontrado: fd.get('data_encontrado'),
+                foto: fd.get('foto') || '',
+                status: 'disponivel',
+                registrado_por: (JSON.parse(localStorage.getItem('achou_auth') || '{}').email) || 'admin'
+            };
+            itens.push(novo);
+            saveItens(itens);
+            this.reset();
+            this.classList.remove('was-validated');
+            document.querySelector('input[name=data_encontrado]').value = new Date().toISOString().slice(0, 10);
+            const ok = document.getElementById('ok-msg');
+            ok.classList.remove('d-none');
+            setTimeout(() => ok.classList.add('d-none'), 3000);
+        });
+    </script>
+</body>
+
+</html>
