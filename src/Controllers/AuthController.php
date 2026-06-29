@@ -220,16 +220,34 @@ class AuthController
             'role' => $user['role'],
         ];
 
-        $jwt = JWT::encode($payload, $_ENV['JWT_SECRET'], 'HS256');
+        $jwtSecret = $_ENV['JWT_SECRET'] ?? '';
+        if (strlen($jwtSecret) < 32) {
+            error_log('AuthController::login — JWT_SECRET deve ter pelo menos 32 caracteres.');
+            http_response_code(500);
+            echo json_encode(['error' => 'Configuração de autenticação inválida no servidor.']);
+            return;
+        }
+
+        try {
+            $jwt = JWT::encode($payload, $jwtSecret, 'HS256');
+        } catch (\Throwable $e) {
+            error_log('AuthController::login — erro ao gerar JWT: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao iniciar sessão.']);
+            return;
+        }
 
         http_response_code(200);
         echo json_encode([
             'sucesso' => true,
             'token'   => $jwt,
             'usuario' => [
-                'id'   => $user['id'],
-                'nome' => $user['nome'],
-                'role' => $user['role'],
+                'id'        => $user['id'],
+                'nome'      => $user['nome'],
+                'email'     => $user['email'],
+                'role'      => $user['role'],
+                'matricula' => $user['matricula'] ?? null,
+                'siap'      => $user['siap'] ?? null,
             ],
         ]);
     }

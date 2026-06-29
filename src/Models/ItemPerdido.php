@@ -141,6 +141,8 @@ class ItemPerdido extends BaseModel
                        i.data_encontrado,
                        i.status,
                        i.foto_url,
+                       i.categoria_id,
+                       i.local_id,
                        c.nome        AS categoria,
                        l.nome_local  AS local,
                        u.nome        AS registrado_por

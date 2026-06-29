@@ -26,7 +26,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
     volumes:
       - postgres_data:/var/lib/postgresql/data     # dados persistem entre restarts
-      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql  # cria as tabelas na 1ª vez
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:Z  # cria as tabelas na 1ª vez
     ports:
       - "5432:5432"       # expõe pra você acessar com psql/DBeaver se quiser
     healthcheck:
