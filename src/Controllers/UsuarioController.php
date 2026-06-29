@@ -109,17 +109,23 @@ class UsuarioController
             return;
         }
 
+        $usuarioModel = new Usuario();
+
+        $existe = $usuarioModel->findById($id);
+        if (!$existe) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Usuário não encontrado.']);
+            return;
+        }
+
         if (mb_strlen($nome) < 3 || mb_strlen($nome) > 150) {
             http_response_code(400);
             echo json_encode(['error' => 'O nome deve ter entre 3 e 150 caracteres.']);
             return;
         }
 
-        $usuarioModel = new Usuario();
-
         try {
             $sucesso = $usuarioModel->update($id, $nome, $email, $role);
-
             if ($sucesso) {
                 http_response_code(200);
                 echo json_encode(['sucesso' => true, 'mensagem' => 'Usuário atualizado com sucesso.']);

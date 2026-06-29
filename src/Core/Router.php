@@ -1,5 +1,4 @@
 <?php
-
 namespace Core;
 
 use Core\Request;
@@ -24,7 +23,6 @@ class Router
         $this->routers['POST'][$path] = $callback;
     }
 
-    // Adicionado o PUT
     public function put(string $path, $callback): void
     {
         $this->routers['PUT'][$path] = $callback;
@@ -35,9 +33,15 @@ class Router
         $this->routers['DELETE'][$path] = $callback;
     }
 
+    private function buildPattern(string $route): string
+    {
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?<$1>[a-zA-Z0-9_-]+)', $route);
+        return "@^" . $pattern . "$@";
+    }
+
     public function resolve()
     {
-        $path = $this->request->getUri();
+        $path   = $this->request->getUri();
         $method = $this->request->getMethod();
 
         if ($method === 'OPTIONS') {
@@ -48,35 +52,58 @@ class Router
         $routes = $this->routers[$method] ?? [];
 
         foreach ($routes as $route => $callback) {
-            $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?<$1>[a-zA-Z0-9_-]+)', $route);
-            $pattern = "@^" . $pattern . "$@";
+            $pattern = $this->buildPattern($route);
 
-            if (preg_match($pattern, $path, $matches)) {
-                
-                $params = [];
-                foreach ($matches as $key => $value) {
-                    if (is_string($key)) {
-                        $params[] = $value;
+            if (!preg_match($pattern, $path, $matches)) {
+                continue;
+            }
+
+            $params = [$this->request];
+            foreach ($matches as $key => $value) {
+                if (!is_string($key)) continue;
+
+                if (!ctype_digit((string) $value) || (int) $value <= 0) {
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Recurso não encontrado.']);
+                    return;
+                }
+
+                $params[] = (int) $value;
+            }
+
+            if (is_callable($callback)) {
+                return call_user_func_array($callback, $params);
+            }
+
+            if (is_array($callback)) {
+                $controller = new $callback[0]();
+                return call_user_func_array([$controller, $callback[1]], $params);
+            }
+        }
+
+        foreach ($this->routers as $metodo => $rotasDoMetodo) {
+            if ($metodo === $method) continue;
+
+            foreach ($rotasDoMetodo as $route => $_) {
+                if (!preg_match($this->buildPattern($route), $path)) continue;
+
+                $permitidos = [];
+                foreach ($this->routers as $m => $rts) {
+                    foreach ($rts as $rt => $_cb) {
+                        if (preg_match($this->buildPattern($rt), $path)) {
+                            $permitidos[] = $m;
+                        }
                     }
                 }
 
-                array_unshift($params, $this->request);
-
-                if (is_callable($callback)) {
-                    return call_user_func_array($callback, $params);
-                }
-
-                if (is_array($callback)) {
-                    $controller = new $callback[0]();
-                    return call_user_func_array([$controller, $callback[1]], $params);
-                }
+                http_response_code(405);
+                header('Allow: ' . implode(', ', array_unique($permitidos)));
+                echo json_encode(['error' => 'Método não permitido.']);
+                return;
             }
         }
 
         http_response_code(404);
-        echo json_encode([
-            'error' => 'Rota não encontrada ou método incorreto',
-        ]);
-        return;
+        echo json_encode(['error' => 'Rota não encontrada.']);
     }
 }

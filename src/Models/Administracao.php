@@ -25,10 +25,12 @@ class Administracao extends BaseModel
         $sql = "UPDATE {$this->table} SET siap = :siap WHERE id = :id";
         $stmt = $this->db->prepare($sql);
 
-        return $stmt->execute([
+        $stmt->execute([
             'id'   => $id,
             'siap' => $siap,
         ]);
+
+        return $stmt->rowCount() > 0;
     }
 
     public function siapeExists(string $siap): bool

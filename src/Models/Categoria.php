@@ -5,15 +5,7 @@ namespace Models;
 use Models\BaseModel;
 use PDO;
 
-/**
- * A tabela 'categoria' no schema NÃO possui coluna 'ativo' nem 'deleted_at'.
- * O código original tinha WHERE ativo = TRUE no findAll(), o que causava erro
- * de runtime pois a coluna não existe.
- *
- * Estratégia adotada: deleção física (DELETE) via delete() do BaseModel,
- * com proteção por FK (ON DELETE SET NULL em item_perdido.categoria_id)
- * que preserva os itens já cadastrados mesmo após a exclusão da categoria.
- */
+
 class Categoria extends BaseModel
 {
     protected string $table = 'categoria';
@@ -38,7 +30,8 @@ class Categoria extends BaseModel
     {
         $sql  = "UPDATE {$this->table} SET nome = :nome WHERE id = :id";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute(['id' => $id, 'nome' => $nome]);
+        $stmt->execute(['id' => $id, 'nome' => $nome]);
+        return $stmt->rowCount() > 0;
     }
 
 

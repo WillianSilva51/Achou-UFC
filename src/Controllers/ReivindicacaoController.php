@@ -32,10 +32,6 @@ class ReivindicacaoController
 
         try {
             $reivindicacaoModel = new Reivindicacao();
-
-            // CORREÇÃO MED-02: a data_solicitacao não é mais gerada pelo PHP.
-            // O banco usa DEFAULT timezone('utc', now()) definido no schema,
-            // evitando inconsistências de timezone entre o servidor PHP e o PostgreSQL.
             $id_reivindicacao = $reivindicacaoModel->registrarPedido($item_id, $aluno_id);
 
             http_response_code(201);
@@ -142,9 +138,10 @@ class ReivindicacaoController
         $statusBruto = $dados['status'] ?? $dados['status_reivindicacao'] ?? '';
         $novo_status = strtolower(htmlspecialchars(strip_tags((string) $statusBruto), ENT_QUOTES, 'UTF-8'));
 
-        if (!in_array($novo_status, ['aprovado', 'recusado', 'pendente'], true)) {
+        
+        if (!in_array($novo_status, ['aprovado', 'recusado'], true)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Status inválido. Use: aprovado, recusado ou pendente.']);
+            echo json_encode(['error' => 'Status inválido. Use: aprovado ou recusado.']);
             return;
         }
 

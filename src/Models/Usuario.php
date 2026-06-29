@@ -69,12 +69,13 @@ class Usuario extends BaseModel
                 WHERE id = :id";
 
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
+        $stmt->execute([
             'id'    => $id,
             'nome'  => $nome,
             'email' => $email,
             'role'  => $role,
         ]);
+        return $stmt->rowCount() > 0;
     }
 
 
@@ -97,7 +98,6 @@ class Usuario extends BaseModel
         }
 
         if (!empty($filtros['busca'])) {
-            // ILIKE = case-insensitive no PostgreSQL (LIKE é case-sensitive)
             $where[]          = "(nome ILIKE :busca OR email ILIKE :busca)";
             $binds[':busca']  = '%' . $filtros['busca'] . '%';
         }

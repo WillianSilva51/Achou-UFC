@@ -137,10 +137,14 @@ class AuthController
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
-            http_response_code(409);
-            echo json_encode(['error' => 'Os dados informados (e-mail ou matrícula) já estão em uso no sistema.']);
-            error_log('Erro de BD no registro (Conflito): ' . $e->getMessage());
-
+            if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_') !== false) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Os dados informados (e-mail ou matrícula) já estão em uso no sistema.']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Erro interno ao registrar usuário.']);
+            }
+            error_log('Erro de BD no registro: ' . $e->getMessage()); 
         } catch (\Exception $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -190,8 +194,8 @@ class AuthController
         $senha = $dados['senha'];
 
         if (!$email) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Formato de email inválido.']);
+            http_response_code(401);
+            echo json_encode(['error' => 'Credenciais inválidas.']);
             return;
         }
 

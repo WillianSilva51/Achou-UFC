@@ -22,8 +22,13 @@ class LocalController
         }
         $dados = $request->getBody();
 
-        $nome_local = !empty($dados['nome_local']) ? htmlspecialchars(strip_tags($dados['nome_local']), ENT_QUOTES, 'UTF-8') : '';
-        $descricao  = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
+        $nome_local = !empty($dados['nome_local']) 
+            ? htmlspecialchars(strip_tags(trim($dados['nome_local'])), ENT_QUOTES, 'UTF-8') 
+            : '';
+        
+        $descricao = !empty($dados['descricao']) 
+            ? htmlspecialchars(strip_tags(trim($dados['descricao'])), ENT_QUOTES, 'UTF-8') 
+            : '';
 
         if (empty($nome_local)) {
             http_response_code(400);
@@ -121,7 +126,7 @@ class LocalController
 
         $dados = $request->getBody();
 
-        $nome_local = !empty($dados['nome_local']) ? htmlspecialchars(strip_tags($dados['nome_local']), ENT_QUOTES, 'UTF-8') : '';
+        $nome_local = !empty($dados['nome_local']) ? htmlspecialchars(strip_tags(trim($dados['nome_local'])), ENT_QUOTES, 'UTF-8') : '';
         $descricao  = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
 
         if (empty($nome_local)) {
@@ -133,14 +138,24 @@ class LocalController
         $localModel = new Local();
         
         try {
-            $sucesso = $localModel->update($id, $nome_local, $descricao);
+            
+            $existe = $localModel->findById($id);
+            
+            if (!$existe) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Local não encontrado.']);
+                return;
+            }
 
-            if ($sucesso) {
+
+            $sucesso = $localModel->update($id, $nome_local, $descricao);
+            //if($sucesso){
                 http_response_code(200);
                 echo json_encode(['sucesso' => true, 'mensagem' => 'Local atualizado com sucesso.']);
-            } else {
-                throw new Exception("Falha ao atualizar ou nenhuma alteração foi feita.");
-            }
+                return;      
+            //}     
+
+            
         } catch (\PDOException $e) {
             if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_local_nome') !== false) {
                 http_response_code(409);
