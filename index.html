@@ -26,14 +26,15 @@
     <link rel="stylesheet" href="css/sections/nav.css">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/global.css">
-    <script type="module" src="js/main.js" defer></script>
+    <script src="js/app.js" defer></script>
+    <script src="js/main.js" defer></script>
     <title>Achou! UFC</title>
 </head>
 
 <body>
     <nav class="navbar navbar-dark navbar-expand-lg navbar-ufc">
         <div class="container">
-            <a href="#" class="navbar-brand d-flex align-items-center gap-2">
+            <a href="index.html" class="navbar-brand d-flex align-items-center gap-2">
                 <img src="assets/images/Brasao4_vertical_cor_300dpi.png" class="brand-logo" alt="Logo da UFC">
 
                 <span class="brand-title">
@@ -41,42 +42,33 @@
                 </span>
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#nav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+                aria-controls="nav" aria-label="Abrir menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav ms-auto gap-2">
+                    <li class="nav-item">
+                        <a href="#vitrine" class="nav-link">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                            Vitrine
+                        </a>
+                    </li>
 
-            <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="nav">
+                    <li class="nav-item">
+                        <a href="#como-funciona" class="nav-link">
+                            <i class="bi bi-info-circle"></i>
+                            Como Funciona
+                        </a>
+                    </li>
 
-                <div class="offcanvas-header">
-                    <h5 class="offcanvas-title">Menu</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-                </div>
-
-                <div class="offcanvas-body">
-                    <ul class="navbar-nav ms-auto gap-2">
-                        <li class="nav-item">
-                            <a href="#vitrine" class="nav-link">
-                                <i class="bi bi-grid-3x3-gap"></i>
-                                Vitrine
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="#como-funciona" class="nav-link">
-                                <i class="bi bi-info-circle"></i>
-                                Como Funciona
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="login.html" class="nav-link">
-                                <i class="bi bi-shield-lock"></i>
-                                Login
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
+                    <li class="nav-item">
+                        <a href="login.html" class="nav-link nav-link-login">
+                            <i class="bi bi-shield-lock"></i>
+                            Login
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
@@ -92,40 +84,44 @@
                 a retirada do seu item em poucos cliques.</p>
         </div>
     </header>
-    <main class="container py-4">
+    <main id="vitrine" class="container py-4">
         <section class="filters-card mb-4">
-            <div class="row g-2 align-items-end">
-                <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1">Buscar</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                        <input id="f-busca" type="text" class="form-control"
-                            placeholder="Ex: chave, garrafa, carteira…">
+            <form id="form-filtros" action="" method="get">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Buscar</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input id="f-busca" type="text" class="form-control"
+                                placeholder="Ex: chave, garrafa, carteira…">
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1">Categoria</label>
+                        <select id="f-categoria" class="form-select"></select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1">Bloco</label>
+                        <select id="f-local" class="form-select"></select>
+                    </div>
+                    <div class="col-8 col-md-2">
+                        <label class="form-label small mb-1">Data</label>
+                        <input id="f-data" type="date" class="form-control">
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <button type="reset" id="btn-limpar" class="btn btn-outline-secondary w-100"><i
+                                class="bi bi-x-circle"></i>
+                            Limpar</button>
                     </div>
                 </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-1">Categoria</label>
-                    <select id="f-categoria" class="form-select"></select>
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-1">Bloco</label>
-                    <select id="f-local" class="form-select"></select>
-                </div>
-                <div class="col-8 col-md-2">
-                    <label class="form-label small mb-1">Data</label>
-                    <input id="f-data" type="date" class="form-control">
-                </div>
-                <div class="col-4 col-md-2">
-                    <button id="btn-limpar" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i>
-                        Limpar</button>
-                </div>
-            </div>
+            </form>
         </section>
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">Itens encontrados <span class="text-muted">(<span id="total-itens">0</span>)</span></h5>
         </div>
 
+        <section id="lista-itens" class="row g-3"></section>
 
         <section id="como-funciona" class="mt-5 pt-3">
             <h4 class="mb-3">Como funciona</h4>
