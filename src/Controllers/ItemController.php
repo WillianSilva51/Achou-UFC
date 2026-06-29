@@ -6,11 +6,13 @@ use Core\Request;
 use Middlewares\AuthMiddleware;
 use Exception;
 use Models\ItemPerdido;
+use Models\Categoria;
+use Models\Local;
 
 class ItemController
 {
     private const STATUS_VALIDOS = ['disponível', 'disponivel', 'devolvido', 'arquivado', 'em_analise'];
-
+    private const STATUS_CRIACAO = ['disponível', 'disponivel', 'em_analise'];
     private const FOTO_DOMINIOS_PERMITIDOS = [
         'não.esquecerde.iadicionar.dominios.permitirod.com',
     ];
@@ -28,6 +30,23 @@ class ItemController
         }
 
         $dados = $request->getBody();
+        $camposString = ['titulo', 'descricao', 'status', 'data_encontrado', 'foto_url'];
+        foreach ($camposString as $campo) {
+            if (isset($dados[$campo]) && !is_string($dados[$campo])) {
+                http_response_code(400);
+                echo json_encode(['error' => "O campo '{$campo}' deve ser uma string."]);
+                return;
+            }
+        }
+
+        $camposInt = ['categoria_id', 'local_id'];
+        foreach ($camposInt as $campo) {
+            if (isset($dados[$campo]) && !is_numeric($dados[$campo])) {
+                http_response_code(400);
+                echo json_encode(['error' => "O campo '{$campo}' deve ser numérico."]);
+                return;
+            }
+        }
 
         if (empty($dados['titulo']) || empty($dados['categoria_id']) || empty($dados['local_id'])) {
             http_response_code(400);
@@ -56,9 +75,9 @@ class ItemController
             ? strtolower(htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8'))
             : 'disponível';
 
-        if (!in_array($statusRaw, self::STATUS_VALIDOS, true)) {
+        if (!in_array($statusRaw, self::STATUS_CRIACAO, true)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Status do item inválido. Use: ' . implode(', ', self::STATUS_VALIDOS)]);
+            echo json_encode(['error' => 'Status inválido. Use: disponivel ou em_analise.']);
             return;
         }
 
@@ -71,9 +90,22 @@ class ItemController
             echo json_encode(['error' => 'categoria_id e local_id devem ser números inteiros positivos.']);
             return;
         }
+        $categoriaModel = new \Models\Categoria();
+        if (!$categoriaModel->findById($categoria_id)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'categoria_id informado não existe.']);
+            return;
+        }
+
+        $localModel = new \Models\Local();
+        if (!$localModel->findById($local_id)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'local_id informado não existe.']);
+            return;
+        }
 
         $data_encontrado = date('Y-m-d');
-        if (!empty($dados['data_encontrado'])) {
+        if (isset($dados['data_encontrado']) && trim($dados['data_encontrado']) !== '') {
             $data_raw = trim($dados['data_encontrado']);
             $d        = \DateTime::createFromFormat('Y-m-d', $data_raw);
             if (!$d || $d->format('Y-m-d') !== $data_raw) {
@@ -192,7 +224,8 @@ class ItemController
         try {
             $item = $itemModel->findById($id);
 
-            if (!$item) {
+            
+            if (!$item || trim($item['status']) === 'arquivado') {
                 http_response_code(404);
                 echo json_encode(['error' => 'Item não encontrado.']);
                 return;
@@ -220,10 +253,28 @@ class ItemController
         }
 
         $dados     = $request->getBody();
+        $camposString = ['titulo', 'descricao', 'status', 'data_encontrado', 'foto_url'];
+        foreach ($camposString as $campo) {
+            if (isset($dados[$campo]) && !is_string($dados[$campo])) {
+                http_response_code(400);
+                echo json_encode(['error' => "O campo '{$campo}' deve ser uma string."]);
+                return;
+            }
+        }
+
+        $camposInt = ['categoria_id', 'local_id'];
+        foreach ($camposInt as $campo) {
+            if (isset($dados[$campo]) && !is_numeric($dados[$campo])) {
+                http_response_code(400);
+                echo json_encode(['error' => "O campo '{$campo}' deve ser numérico."]);
+                return;
+            }
+        }
+        
         $itemModel = new ItemPerdido();
 
         $itemAtual = $itemModel->findById($id);
-        if (!$itemAtual) {
+        if (!$itemAtual || trim($itemAtual['status']) === 'arquivado') {
             http_response_code(404);
             echo json_encode(['error' => 'Item não encontrado.']);
             return;
@@ -342,14 +393,20 @@ class ItemController
         $itemModel = new ItemPerdido();
 
         try {
-            if (!$itemModel->findById($id)) {
+            $itemAtual = $itemModel->findById($id);
+            if (!$itemAtual) {
                 http_response_code(404);
                 echo json_encode(['error' => 'Item não encontrado.']);
                 return;
             }
-
+            
+            if (trim($itemAtual['status']) === 'arquivado') {
+                http_response_code(404);
+                echo json_encode(['error' => 'Item não encontrado.']);
+                return;
+            }
+            
             $itemModel->updateStatus($id, 'arquivado');
-
             http_response_code(200);
             echo json_encode(['sucesso' => true, 'mensagem' => 'Item arquivado com sucesso.']);
         } catch (Exception $e) {

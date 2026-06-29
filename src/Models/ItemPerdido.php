@@ -64,7 +64,7 @@ class ItemPerdido extends BaseModel
 
         $stmt = $this->db->prepare($sql);
 
-        return $stmt->execute([
+        $stmt->execute([
             'id'              => $id,
             'titulo'          => $titulo,
             'descricao'       => $descricao,
@@ -74,6 +74,7 @@ class ItemPerdido extends BaseModel
             'categoria_id'    => $categoria_id,
             'status'          => $status,
         ]);
+        return $stmt->rowCount() > 0;
     }
 
     public function updateStatus(int $id, string $status): bool

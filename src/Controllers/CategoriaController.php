@@ -26,7 +26,7 @@ class CategoriaController
         $dados = $request->getBody();
 
         $nome = !empty($dados['nome']) ? htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8') : '';
-
+        
         if (empty($nome)) {
             http_response_code(400);
             echo json_encode([
@@ -122,7 +122,7 @@ class CategoriaController
 
         $dados = $request->getBody();
 
-        $nome = !empty($dados['nome']) ? htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8') : '';
+        $nome = !empty($dados['nome']) ? htmlspecialchars(strip_tags(trim($dados['nome'])), ENT_QUOTES, 'UTF-8') : '';
 
         if (empty($nome)) {
             http_response_code(400);
@@ -133,14 +133,23 @@ class CategoriaController
         $categoriaModel = new Categoria();
 
         try {
-            $sucesso = $categoriaModel->update($id, $nome);
+            if (!$categoriaModel->findById($id)) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Categoria não encontrada.']);
+            return;
+        }
 
-            if ($sucesso) {
+            $sucesso = $categoriaModel->update($id, $nome);
+            http_response_code(200);
+            echo json_encode(['sucesso' => true, 'mensagem' => 'Categoria atualizada com sucesso.']);
+
+
+            /*if ($sucesso) {
                 http_response_code(200);
                 echo json_encode(['sucesso' => true, 'mensagem' => 'Categoria atualizada com sucesso.']);
             } else {
                 throw new Exception("Falha ao atualizar ou nenhuma alteração foi feita.");
-            }
+            }*/
         } catch (\PDOException $e) {
             if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_categoria_nome') !== false) {
                 http_response_code(409);

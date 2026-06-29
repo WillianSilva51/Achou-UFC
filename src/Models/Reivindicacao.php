@@ -95,8 +95,22 @@ class Reivindicacao extends BaseModel
     
     public function registrarPedido(int $item_id, int $aluno_id): int
     {
-        try {
+    try {
             $this->db->beginTransaction();
+
+            $stmtDup = $this->db->prepare(
+                "SELECT id FROM {$this->table}
+                 WHERE item_id = :item_id AND aluno_id = :aluno_id
+                   AND status_reivindicacao = 'pendente'
+                 LIMIT 1"
+            );
+            $stmtDup->execute(['item_id' => $item_id, 'aluno_id' => $aluno_id]);
+            if ($stmtDup->fetchColumn() !== false) {
+                $this->db->rollBack();
+                $e = new \PDOException('duplicate key value violates unique constraint "uq_reivindicacao_ativa"');
+                $e->errorInfo = ['23505', null, null];
+                throw $e;
+            }
 
             $stmtItem = $this->db->prepare(
                 "SELECT status FROM item_perdido WHERE id = :item_id FOR UPDATE"
@@ -114,7 +128,6 @@ class Reivindicacao extends BaseModel
                 );
             }
 
-            // data_solicitacao omitida: o banco usa o DEFAULT timezone('utc', now())
             $stmtInsert = $this->db->prepare(
                 "INSERT INTO {$this->table}
                     (status_reivindicacao, item_id, aluno_id)

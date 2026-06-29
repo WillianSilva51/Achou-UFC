@@ -25,10 +25,12 @@ class Aluno extends BaseModel
         $sql = "UPDATE {$this->table} SET matricula = :matricula WHERE aluno_id = :aluno_id";
         $stmt = $this->db->prepare($sql);
 
-        return $stmt->execute([
+        $stmt->execute([
             'aluno_id'  => $aluno_id,
             'matricula' => $matricula,
         ]);
+
+        return $stmt->rowCount() > 0;
     }
 
     public function existsMatricula(string $matricula): bool

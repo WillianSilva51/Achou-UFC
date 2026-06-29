@@ -54,11 +54,12 @@ class Local extends BaseModel
                  WHERE id = :id
                    AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
+        $stmt->execute([
             'id'         => $id,
             'nome_local' => $nome_local,
             'descricao'  => $descricao,
         ]);
+        return $stmt->rowCount() > 0;
     }
 
 
