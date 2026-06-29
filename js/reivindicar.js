@@ -3,8 +3,20 @@ const itemId = parseInt(params.get('id'), 10);
 const wrap = document.getElementById('conteudo');
 
 async function initReivindicacao() {
-    const itens = await mockApi.listarItens();
-    const item = itens.find(i => i.id === itemId);
+    if (!requireAuth('aluno')) return;
+
+    await Promise.all([
+        mockApi.listarCategorias(),
+        mockApi.listarLocais()
+    ]);
+
+    let item;
+    try {
+        item = await mockApi.buscarItem(itemId);
+    } catch (error) {
+        wrap.innerHTML = `<div class="col-12"><div class="alert alert-warning">${escapeHtml(error.message)} <a href="index.html">Voltar</a>.</div></div>`;
+        return;
+    }
 
     if (!item) {
         wrap.innerHTML = `<div class="col-12"><div class="alert alert-warning">Item não encontrado. <a href="index.html">Voltar</a>.</div></div>`;
@@ -14,6 +26,13 @@ async function initReivindicacao() {
     const titulo = escapeHtml(item.titulo);
     const descricao = escapeHtml(item.descricao);
     const status = escapeHtml(item.status);
+    const user = authUser() || {};
+    const nomeUsuario = escapeHtml(user.nome || '');
+    const emailUsuario = escapeHtml(user.email || '');
+    const matriculaUsuario = escapeHtml(user.matricula || '');
+    const nomeReadonly = nomeUsuario ? 'readonly' : '';
+    const emailReadonly = emailUsuario ? 'readonly' : '';
+    const matriculaReadonly = matriculaUsuario ? 'readonly' : '';
 
     wrap.innerHTML = `
       <div class="col-md-5">
@@ -26,9 +45,9 @@ async function initReivindicacao() {
             <h5>${titulo}</h5>
             <p class="text-muted small">${descricao}</p>
             <ul class="list-unstyled small mb-0">
-              <li><i class="bi bi-geo-alt"></i> <strong>Local:</strong> ${escapeHtml(nomeLocal(item.local_id))}</li>
+              <li><i class="bi bi-geo-alt"></i> <strong>Local:</strong> ${escapeHtml(item.local || nomeLocal(item.local_id))}</li>
               <li><i class="bi bi-calendar3"></i> <strong>Encontrado em:</strong> ${formatDate(item.data_encontrado)}</li>
-              <li><i class="bi bi-tag"></i> <strong>Status:</strong> ${status}</li>
+              <li><i class="bi bi-tag"></i> <strong>Status:</strong> ${status.replace('_', ' ')}</li>
             </ul>
           </div>
         </div>
@@ -43,17 +62,17 @@ async function initReivindicacao() {
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label">Nome completo *</label>
-                  <input type="text" class="form-control" name="nome" required minlength="3" maxlength="120">
+                  <input type="text" class="form-control" name="nome" required minlength="3" maxlength="120" value="${nomeUsuario}" ${nomeReadonly}>
                   <div class="invalid-feedback">Informe seu nome (mín. 3 caracteres).</div>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Matrícula *</label>
-                  <input type="text" class="form-control" name="matricula" required pattern="[0-9]{6,12}" maxlength="12">
+                  <input type="text" class="form-control" name="matricula" required pattern="[0-9]{6,12}" maxlength="12" value="${matriculaUsuario}" ${matriculaReadonly}>
                   <div class="invalid-feedback">Matrícula deve conter de 6 a 12 dígitos.</div>
                 </div>
                 <div class="col-md-7">
                   <label class="form-label">E-mail institucional *</label>
-                  <input type="email" class="form-control" name="email" required maxlength="120" placeholder="seuemail@alu.ufc.br">
+                  <input type="email" class="form-control" name="email" required maxlength="120" placeholder="seuemail@alu.ufc.br" value="${emailUsuario}" ${emailReadonly}>
                   <div class="invalid-feedback">Informe um e-mail válido.</div>
                 </div>
                 <div class="col-md-5">
@@ -88,19 +107,21 @@ async function initReivindicacao() {
     document.getElementById('form-reiv').addEventListener('submit', async function (e) {
         e.preventDefault();
         if (!this.checkValidity()) { this.classList.add('was-validated'); return; }
-        const fd = new FormData(this);
-        const novo = await mockApi.criarReivindicacao({
-            item_id: item.id,
-            aluno_nome: fd.get('nome'),
-            matricula: fd.get('matricula'),
-            aluno_email: fd.get('email'),
-            telefone: fd.get('telefone'),
-            prova: fd.get('prova')
-        });
+        let novo;
+        try {
+            novo = await mockApi.criarReivindicacao({ item_id: item.id });
+        } catch (error) {
+            const s = document.getElementById('sucesso');
+            s.className = 'alert alert-danger mt-3';
+            s.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${escapeHtml(error.message)}`;
+            return;
+        }
 
         this.classList.add('d-none');
         const s = document.getElementById('sucesso');
-        document.getElementById('protocolo').textContent = '#' + String(novo.id).padStart(4, '0');
+        s.className = 'alert alert-success mt-3';
+        const protocolo = '#' + String(novo.id_reivindicacao || novo.id || '').padStart(4, '0');
+        s.innerHTML = `<i class="bi bi-check-circle-fill"></i> Reivindicação registrada! A recepção fará contato em até 2 dias úteis. Protocolo: <strong>${protocolo}</strong>`;
         s.classList.remove('d-none');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });

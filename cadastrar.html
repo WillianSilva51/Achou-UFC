@@ -21,8 +21,8 @@
 </head>
 
 <body>
-    <script src="js/auth.js"></script>
-    <script>requireAuth();</script>
+    <script src="js/app.js"></script>
+    <script>requireAuth('admin');</script>
 
     <nav class="navbar navbar-expand-lg navbar-ufc">
         <div class="container-fluid">
@@ -77,8 +77,9 @@
                                     <div class="invalid-feedback">Informe a data.</div>
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label">Foto (opcional)</label>
-                                    <input name="foto" type="file" class="form-control" accept="image/*">
+                                    <label class="form-label">URL da foto (opcional)</label>
+                                    <input name="foto_url" type="url" class="form-control" maxlength="2048"
+                                        placeholder="https://...">
                                 </div>
                             </div>
                             <div class="d-flex gap-2 mt-4">
@@ -99,39 +100,61 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>
-    <script src="js/app.js"></script>
     <script>
         const selCat = document.getElementById('sel-cat');
         const selLoc = document.getElementById('sel-loc');
-        selCat.innerHTML = '<option value="">Selecione...</option>' + CATEGORIAS.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
-        selLoc.innerHTML = '<option value="">Selecione...</option>' + LOCAIS.map(l => `<option value="${l.id}">${l.nome_bloco}</option>`).join('');
-        document.querySelector('input[name=data_encontrado]').value = new Date().toISOString().slice(0, 10);
+        const dataEncontrado = document.querySelector('input[name=data_encontrado]');
+        dataEncontrado.value = new Date().toISOString().slice(0, 10);
+        dataEncontrado.max = dataEncontrado.value;
 
-        document.getElementById('form-item').addEventListener('submit', function (e) {
+        async function carregarCombos() {
+            try {
+                const [categorias, locais] = await Promise.all([
+                    AchouApi.listarCategorias(),
+                    AchouApi.listarLocais()
+                ]);
+                selCat.innerHTML = '<option value="">Selecione...</option>' + categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+                selLoc.innerHTML = '<option value="">Selecione...</option>' + locais.map(l => `<option value="${l.id}">${escapeHtml(l.nome)}</option>`).join('');
+            } catch (error) {
+                document.getElementById('ok-msg').className = 'alert alert-danger mt-3';
+                document.getElementById('ok-msg').innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${escapeHtml(error.message)}`;
+            }
+        }
+
+        document.getElementById('form-item').addEventListener('submit', async function (e) {
             e.preventDefault();
             if (!this.checkValidity()) { this.classList.add('was-validated'); return; }
             const fd = new FormData(this);
-            const itens = getItens();
-            const novo = {
-                id: nextId(itens),
+
+            const payload = {
                 titulo: fd.get('titulo'),
                 descricao: fd.get('descricao'),
                 categoria_id: parseInt(fd.get('categoria_id'), 10),
                 local_id: parseInt(fd.get('local_id'), 10),
                 data_encontrado: fd.get('data_encontrado'),
-                foto: fd.get('foto') || '',
-                status: 'disponivel',
-                registrado_por: (JSON.parse(localStorage.getItem('achou_auth') || '{}').email) || 'admin'
+                status: 'disponivel'
             };
-            itens.push(novo);
-            saveItens(itens);
-            this.reset();
-            this.classList.remove('was-validated');
-            document.querySelector('input[name=data_encontrado]').value = new Date().toISOString().slice(0, 10);
+
+            if (fd.get('foto_url')) {
+                payload.foto_url = fd.get('foto_url');
+            }
+
             const ok = document.getElementById('ok-msg');
-            ok.classList.remove('d-none');
-            setTimeout(() => ok.classList.add('d-none'), 3000);
+            try {
+                await AchouApi.criarItem(payload);
+                this.reset();
+                this.classList.remove('was-validated');
+                dataEncontrado.value = new Date().toISOString().slice(0, 10);
+                ok.className = 'alert alert-success mt-3';
+                ok.innerHTML = '<i class="bi bi-check-circle-fill"></i> Item cadastrado com sucesso!';
+                setTimeout(() => ok.classList.add('d-none'), 3000);
+            } catch (error) {
+                ok.className = 'alert alert-danger mt-3';
+                ok.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${escapeHtml(error.message)}`;
+            }
         });
+
+        carregarCombos();
     </script>
 </body>
 

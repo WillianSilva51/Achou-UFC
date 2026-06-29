@@ -66,10 +66,12 @@ class Reivindicacao extends BaseModel
         $whereData = $this->buildWhereClause($filtros);
 
         $sql = "SELECT r.id,
+                       r.item_id,
                        r.status_reivindicacao,
                        r.data_solicitacao,
                        i.titulo     AS item_titulo,
                        u.nome       AS aluno_nome,
+                       u.email      AS aluno_email,
                        a.matricula
                 FROM {$this->table} r
                 INNER JOIN item_perdido i ON r.item_id   = i.id

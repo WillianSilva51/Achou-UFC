@@ -86,6 +86,15 @@ main {
   background: #a37200;
 }
 
+.status-em_analise {
+  background: #a37200;
+}
+
 .status-entregue {
+  background: #6c757d;
+}
+
+.status-devolvido,
+.status-arquivado {
   background: #6c757d;
 }

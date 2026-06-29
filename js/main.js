@@ -21,8 +21,9 @@ function renderSelect(select, opcoes, labelPadrao) {
 function statusLabel(status) {
     const labels = {
         disponivel: 'Disponivel',
-        reivindicado: 'Reivindicado',
-        entregue: 'Entregue'
+        em_analise: 'Em analise',
+        devolvido: 'Devolvido',
+        arquivado: 'Arquivado'
     };
 
     return labels[status] || status;
@@ -32,8 +33,8 @@ function renderItem(item) {
     const titulo = escapeHtml(item.titulo);
     const descricao = escapeHtml(item.descricao);
     const status = escapeHtml(item.status);
-    const categoria = escapeHtml(nomeCategoria(item.categoria_id));
-    const local = escapeHtml(nomeLocal(item.local_id));
+    const categoria = escapeHtml(item.categoria || nomeCategoria(item.categoria_id));
+    const local = escapeHtml(item.local || nomeLocal(item.local_id));
 
     return `
         <div class="col-12 col-md-6 col-lg-4">
@@ -52,8 +53,8 @@ function renderItem(item) {
                         <li><i class="bi bi-geo-alt"></i> <strong>Local:</strong> ${local}</li>
                         <li><i class="bi bi-calendar3"></i> <strong>Encontrado em:</strong> ${formatDate(item.data_encontrado)}</li>
                     </ul>
-                    ${item.status === 'entregue'
-            ? '<button class="btn btn-outline-secondary w-100" disabled>Item entregue</button>'
+                    ${item.status !== 'disponivel'
+            ? '<button class="btn btn-outline-secondary w-100" disabled>Indisponivel</button>'
             : `<a class="btn btn-ufc w-100" href="reivindicar.html?id=${item.id}">
                             <i class="bi bi-hand-index-thumb"></i> Reivindicar
                         </a>`}
@@ -99,16 +100,37 @@ function renderItens() {
 }
 
 async function init() {
-    const [itensMock, categorias, locais] = await Promise.all([
-        mockApi.listarItens(),
-        mockApi.listarCategorias(),
-        mockApi.listarLocais()
-    ]);
+    try {
+        const [categorias, locais] = await Promise.all([
+            mockApi.listarCategorias(),
+            mockApi.listarLocais()
+        ]);
+        itens = await mockApi.listarItens();
+        renderSelect(elementos.categoria, categorias, 'Todas');
+        renderSelect(elementos.local, locais, 'Todos');
+        renderItens();
+    } catch (error) {
+        if (error.status === 401) {
+            elementos.lista.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-warning text-center">
+                        Faça login para visualizar e reivindicar os itens encontrados.
+                        <a class="alert-link" href="login.html?next=index.html">Entrar</a>
+                    </div>
+                </div>
+            `;
+            return;
+        }
 
-    itens = itensMock;
-    renderSelect(elementos.categoria, categorias, 'Todas');
-    renderSelect(elementos.local, locais, 'Todos');
-    renderItens();
+        elementos.lista.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-danger text-center">
+                    ${escapeHtml(error.message)}
+                </div>
+            </div>
+        `;
+        return;
+    }
 
     [elementos.busca, elementos.categoria, elementos.local, elementos.data].forEach((campo) => {
         campo.addEventListener('input', renderItens);

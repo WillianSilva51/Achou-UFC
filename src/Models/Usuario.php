@@ -11,9 +11,17 @@ class Usuario extends BaseModel
 
     public function verificarCredenciais(string $email, string $senha): ?array
     {
-        $query = "SELECT id, nome, email, senha, role
-                  FROM {$this->table}
-                  WHERE email = :email
+        $query = "SELECT u.id,
+                         u.nome,
+                         u.email,
+                         u.senha,
+                         u.role,
+                         a.matricula,
+                         ad.siap
+                  FROM {$this->table} u
+                  LEFT JOIN aluno a ON a.aluno_id = u.id
+                  LEFT JOIN administracao ad ON ad.id = u.id
+                  WHERE u.email = :email
                   LIMIT 1";
 
         $stmt = $this->db->prepare($query);

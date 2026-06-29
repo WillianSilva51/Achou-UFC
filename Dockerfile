@@ -19,18 +19,31 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Habilita mod_rewrite para o .htaccess funcionar
 RUN a2enmod rewrite
 
-# Configura Apache para servir a pasta public/ e aceitar .htaccess
-RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' \
+# APIs devem registrar warnings no log, nunca imprimir HTML antes do JSON.
+RUN printf '%s\n' \
+        'display_errors=Off' \
+        'html_errors=Off' \
+        'log_errors=On' \
+        'error_reporting=E_ALL' \
+        > /usr/local/etc/php/conf.d/achou-ufc.ini
+
+# Configura Apache para servir o frontend na raiz e encaminhar /api pelo .htaccess.
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html|g' \
         /etc/apache2/sites-available/000-default.conf \
-    && sed -i 's|<Directory /var/www/html>|<Directory /var/www/html/public>|g' \
-        /etc/apache2/apache2.conf \
-    && sed -i 's|AllowOverride None|AllowOverride All|g' \
-        /etc/apache2/apache2.conf
+    && printf '%s\n' \
+        '<Directory /var/www/html>' \
+        '    Options -Indexes +FollowSymLinks' \
+        '    AllowOverride All' \
+        '    Require all granted' \
+        '</Directory>' \
+        > /etc/apache2/conf-available/achou-ufc.conf \
+    && a2enconf achou-ufc
 
 WORKDIR /var/www/html
 
 # Copia tudo e instala dependências
 COPY . .
+RUN git config --global --add safe.directory /var/www/html
 RUN composer install --no-dev --optimize-autoloader
 
 # Permissões

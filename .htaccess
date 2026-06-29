@@ -1,0 +1,6 @@
+RewriteEngine On
+
+RewriteRule ^(src|vendor|docs)(/|$) - [F,L]
+RewriteRule ^(composer\.(json|lock)|Dockerfile|docker-compose\.yml|README\.md|LICENSE|\.env|\.gitignore)$ - [F,L]
+
+RewriteRule ^api(/.*)?$ public/index.php [QSA,L]

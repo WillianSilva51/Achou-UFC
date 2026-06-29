@@ -72,24 +72,36 @@ class UsuarioController
         header('Content-Type: application/json');
 
         $usuarioLogado = AuthMiddleware::handle();
+        $isSelf = (int) $usuarioLogado->sub === $id;
 
-        if ($usuarioLogado->role !== 'admin') {
+        if ($usuarioLogado->role !== 'admin' && !$isSelf) {
             http_response_code(403);
-            echo json_encode(['error' => 'Acesso negado. Apenas administradores podem alterar dados de usuários.']);
+            echo json_encode(['error' => 'Acesso negado. Você só pode alterar os seus próprios dados.']);
             return;
         }
 
         $dados = $request->getBody();
 
-        if (empty($dados['nome']) || empty($dados['email']) || empty($dados['role'])) {
+        if (empty($dados['nome']) || empty($dados['email'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'Nome, email e role são obrigatórios.']);
+            echo json_encode(['error' => 'Nome e email são obrigatórios.']);
+            return;
+        }
+
+        $usuarioModel = new Usuario();
+
+        $existe = $usuarioModel->findById($id);
+        if (!$existe) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Usuário não encontrado.']);
             return;
         }
 
         $nome  = htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8');
         $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
-        $role  = strtolower(htmlspecialchars(strip_tags($dados['role']), ENT_QUOTES, 'UTF-8'));
+        $role  = !empty($dados['role'])
+            ? strtolower(htmlspecialchars(strip_tags($dados['role']), ENT_QUOTES, 'UTF-8'))
+            : $existe['role'];
 
         if (!$email) {
             http_response_code(400);
@@ -103,18 +115,9 @@ class UsuarioController
             return;
         }
 
-        if ($id === (int) $usuarioLogado->sub && $role !== $usuarioLogado->role) {
+        if ($isSelf && $role !== $existe['role']) {
             http_response_code(403);
             echo json_encode(['error' => 'Você não tem permissão para alterar o seu próprio nível de acesso.']);
-            return;
-        }
-
-        $usuarioModel = new Usuario();
-
-        $existe = $usuarioModel->findById($id);
-        if (!$existe) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Usuário não encontrado.']);
             return;
         }
 
@@ -128,10 +131,28 @@ class UsuarioController
             $sucesso = $usuarioModel->update($id, $nome, $email, $role);
             if ($sucesso) {
                 http_response_code(200);
-                echo json_encode(['sucesso' => true, 'mensagem' => 'Usuário atualizado com sucesso.']);
+                echo json_encode([
+                    'sucesso' => true,
+                    'mensagem' => 'Usuário atualizado com sucesso.',
+                    'usuario' => [
+                        'id' => $id,
+                        'nome' => $nome,
+                        'email' => $email,
+                        'role' => $role,
+                    ],
+                ]);
             } else {
-                http_response_code(404);
-                echo json_encode(['error' => 'Usuário não encontrado ou nenhuma alteração foi necessária.']);
+                http_response_code(200);
+                echo json_encode([
+                    'sucesso' => true,
+                    'mensagem' => 'Nenhuma alteração foi necessária.',
+                    'usuario' => [
+                        'id' => $id,
+                        'nome' => $nome,
+                        'email' => $email,
+                        'role' => $role,
+                    ],
+                ]);
             }
         } catch (\PDOException $e) {
             if ($e->getCode() == 23505 || str_contains($e->getMessage(), 'uq_usuario_email')) {

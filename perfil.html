@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Meu perfil — Achou! UFC Quixadá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/components/admin.css">
+    <link rel="stylesheet" href="css/sections/nav.css">
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <script src="js/app.js"></script>
+    <script>requireAuth();</script>
+
+    <nav class="navbar navbar-expand-lg navbar-ufc">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" alt="UFC" class="brand-logo">
+                <span class="brand-title">Achou!<span class="accent"> UFC</span> · Perfil</span>
+            </a>
+
+            <div class="d-flex align-items-center gap-2">
+                <a id="perfil-voltar" href="index.html" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-left"></i>
+                    Voltar
+                </a>
+                <div class="nav-auth-item">
+                    <a href="login.html" class="nav-link nav-link-login">
+                        <i class="bi bi-shield-lock"></i>
+                        Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-4">
+            <div>
+                <h4 class="mb-1">Meu perfil</h4>
+                <small class="text-muted">Gerencie seus dados de acesso e identifique a conta usada nas reivindicações.</small>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <section class="col-lg-5">
+                <div class="card stat-card h-100">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-person-badge text-primary"></i> Informações da conta</h6>
+                        <dl class="row mb-0 small">
+                            <dt class="col-5 text-muted">Nome</dt>
+                            <dd class="col-7" id="perfil-nome">-</dd>
+
+                            <dt class="col-5 text-muted">E-mail</dt>
+                            <dd class="col-7" id="perfil-email">-</dd>
+
+                            <dt class="col-5 text-muted">Tipo</dt>
+                            <dd class="col-7" id="perfil-role">-</dd>
+
+                            <dt class="col-5 text-muted" id="perfil-id-label">Identificador</dt>
+                            <dd class="col-7" id="perfil-identificador">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+
+            <section class="col-lg-7">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-pencil-square text-primary"></i> Editar dados</h6>
+                        <form id="form-dados" class="needs-validation" novalidate>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nome *</label>
+                                    <input name="nome" type="text" class="form-control" minlength="3" maxlength="150" required>
+                                    <div class="invalid-feedback">Informe um nome entre 3 e 150 caracteres.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">E-mail *</label>
+                                    <input name="email" type="email" class="form-control" maxlength="255" required>
+                                    <div class="invalid-feedback">Informe um e-mail válido.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tipo de conta</label>
+                                    <input name="role" type="text" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" id="form-identificador-label">Identificador</label>
+                                    <input name="identificador" type="text" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div id="dados-alerta" class="alert d-none small py-2 mt-3"></div>
+                            <button type="submit" class="btn btn-ufc mt-3">
+                                <i class="bi bi-save"></i>
+                                Salvar alterações
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <section class="col-lg-7 offset-lg-5">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-key text-primary"></i> Alterar senha</h6>
+                        <form id="form-senha" class="needs-validation" novalidate>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Senha atual *</label>
+                                    <input name="senha_atual" type="password" class="form-control" minlength="8" required>
+                                    <div class="invalid-feedback">Informe a senha atual.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Nova senha *</label>
+                                    <input name="nova_senha" id="nova-senha" type="password" class="form-control" minlength="8" maxlength="72" required>
+                                    <div class="invalid-feedback">A nova senha deve ter ao menos 8 caracteres.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Confirmar nova senha *</label>
+                                    <input name="confirmar_senha" id="confirmar-senha" type="password" class="form-control" minlength="8" maxlength="72" required>
+                                    <div class="invalid-feedback">As senhas precisam ser iguais.</div>
+                                </div>
+                            </div>
+                            <div id="senha-alerta" class="alert d-none small py-2 mt-3"></div>
+                            <button type="submit" class="btn btn-ufc mt-3">
+                                <i class="bi bi-shield-lock"></i>
+                                Atualizar senha
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+    <script src="js/perfil.js"></script>
+</body>
+
+</html>
