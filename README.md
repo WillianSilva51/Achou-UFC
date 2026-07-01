@@ -55,7 +55,7 @@ Devido à utilização do Docker, a configuração do ambiente de desenvolviment
 #### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/achou-ufc.git
+[git clone https://github.com/seu-usuario/achou-ufc.git](https://github.com/WillianSilva51/Achou-UFC.git)
 cd achou-ufc
 ```
 
