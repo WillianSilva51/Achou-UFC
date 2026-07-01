@@ -91,20 +91,13 @@ INSERT INTO local (nome_local, descricao) VALUES
 ON CONFLICT (nome_local) DO NOTHING;
 
 
--- =============================================================
---  SEEDS DE TESTE — usuários fixos para desenvolvimento
---  Senhas em texto claro para referência:
---    admin@ufc.br      → senha: Admin@123
---    aluno@alu.ufc.br  → senha: Aluno@123
---    maria@alu.ufc.br  → senha: Aluno@123
---    joao@alu.ufc.br   → senha: Aluno@123
--- =============================================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 INSERT INTO usuario (id, nome, email, senha, role) VALUES
-    (1, 'Administrador Local',  'admin@ufc.br',       '$2y$12$0.HR279q32JLmJGIUMLM/egpSOTwQx6ly7QHZdF8J6g16HTqpj.Oi', 'admin'),
-    (2, 'Aluno Teste',          'aluno@alu.ufc.br',   '$2y$12$mpePF4SZ1o.w6VKsOpx9UehdcmlfsIhfX5DaXifJdbhayRBT6jmPS', 'aluno'),
-    (3, 'Maria Silva',          'maria@alu.ufc.br',   '$2y$12$mpePF4SZ1o.w6VKsOpx9UehdcmlfsIhfX5DaXifJdbhayRBT6jmPS', 'aluno'),
-    (4, 'Joao Ferreira',        'joao@alu.ufc.br',    '$2y$12$mpePF4SZ1o.w6VKsOpx9UehdcmlfsIhfX5DaXifJdbhayRBT6jmPS', 'aluno')
+    (1, 'Administrador Local',  'admin@ufc.br',       crypt('Admin@123', gen_salt('bf', 12)), 'admin'),
+    (2, 'Aluno Teste',          'aluno@alu.ufc.br',   crypt('Aluno@123', gen_salt('bf', 12)), 'aluno'),
+    (3, 'Maria Silva',          'maria@alu.ufc.br',   crypt('Aluno@123', gen_salt('bf', 12)), 'aluno'),
+    (4, 'Joao Ferreira',        'joao@alu.ufc.br',    crypt('Aluno@123', gen_salt('bf', 12)), 'aluno')
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO administracao (id, siap) VALUES
