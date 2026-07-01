@@ -1,0 +1,102 @@
+Preparação (app.js):
+[ ] Adicionar atualizarItem()
+[ ] Adicionar criarCategoria(), atualizarCategoria(), excluirCategoria()
+[ ] Adicionar criarLocal(), atualizarLocal(), excluirLocal()
+[ ] Adicionar listarUsuarios()
+
+Correções no backend (PHP):
+[ ] Bug 1: FOTO_DOMINIOS_PERMITIDOS — substituir placeholder por domínios reais
+[ ] Bug 5: AuthController::register — bloquear role='admin' no self-register
+[ ] Bug 9: ReivindicacaoController::index — permitir aluno ver as próprias reivs
+
+Correções no front (HTML/JS):
+[ ] Bug 2: reivindicar.js — corrigir submit (remover campos que não existem no back)
+[ ] Bug 3: login.html e register.html — adicionar script reCAPTCHA + meta tag
+[ ] Bug 4: ItemController::index — remover AuthMiddleware obrigatório (ou tratar no front)
+[ ] Limpeza: remover <link href="css/styles.css"> de admin.html e cadastrar.html
+[ ] Limpeza: deletar css/sections/home.css (vazio e órfão)
+[ ] Limpeza: padronizar posição dos <script> no final do body em todas as páginas
+
+Telas novas:
+[ ] Criar auth_hub.html
+[ ] Criar minhas_reivindicacoes.html + js/minhas-reivindicacoes.js
+[ ] Criar gestao_entidades.html + js/gestao-entidades.js
+[ ] Criar editar_item.html + js/editar-item.js
+[ ] Criar gestao_usuarios.html + js/gestao-usuarios.js
+
+Integração:
+[ ] admin.html sidebar: adicionar links para gestao_entidades e gestao_usuarios
+[ ] admin.html tabela de itens: adicionar botão "Editar" → editar_item.html?id={id}
+[ ] index.html navbar: adicionar link "Minhas reivindicações" para alunos logados
+
+Validação final:
+[ ] Fluxo completo aluno: register → login → ver itens → reivindicar → ver status
+[ ] Fluxo completo admin: login → cadastrar item → aprovar reivindicação → editar item
+[ ] Admin: criar/editar/excluir categoria (testar 409 com categoria em uso)
+[ ] Admin: criar/editar/excluir local (testar 409 com local em uso)
+[ ] Admin: listar usuários, filtrar por role, resetar senha de aluno
+
+
+
+
+
+
+
+EXPECIFICAMENTE PARA AS TELAS:
+
+[1] PORTAL DE ACESSO (auth_hub.html)
+O usuário não pode cair de paraquedas num formulário sem saber onde está. 
+Essa tela serve para recepcionar o cara e separar logo de cara quem quer entrar 
+(já tem conta) de quem precisa criar conta (aluno novo ou servidor). Evita confusão.
+    Acesso: PUBLIC
+    Elementos Essenciais:
+    - [UI] Layout limpo (split-screen ou card centralizado) com a logo da UFC.
+    - [UI] Dois Call-to-Actions (CTAs) primários e distintos: "Sou Novo Aqui (Cadastrar)" e "Já tenho conta (Entrar)".
+
+
+[2] MINHAS_REIVINDICACOES.HTML
+Se o aluno pede o item no site e não tem uma tela para ver o status, ele vai ficar cego. 
+O que ele vai fazer? Vai bater lá na porta da recepção para perguntar "E aí, aprovaram?".
+Essa tela serve pro aluno se virar sozinho e ver se foi aprovado ou recusado.
+
+    Acesso: ROLE_ALUNO
+    API: GET /api/reivindicacoes?aluno_id={id_logado}
+    Elementos Essenciais:
+    - [UI] Tabela/Grid renderizando o histórico de reivindicações do discente.
+    - [LOGIC] Badges dinâmicos espelhando a Máquina de Estados (Pendente, Aprovado, Recusado).
+    - [UX] Bloco condicional visível APENAS para status 'Aprovado' contendo instruções explícitas de retirada na Recepção.
+
+
+[3] GESTAO_ENTIDADES.HTML (Categorias e Locais)
+Se o aluno pede o item no site e não tem uma tela para ver o status, ele vai ficar cego. 
+O que ele vai fazer? Vai bater lá na porta da recepção para perguntar "E aí, aprovaram?".
+Essa tela serve pro aluno se virar sozinho e ver se foi aprovado ou recusado.
+
+    Acesso: ROLE_ADMIN
+    API: GET, POST, PUT, DELETE /api/locais e /api/categorias
+    Elementos Essenciais:
+    - [UI] Tabelas independentes para Locais e Categorias.
+    - [UI] Modais de ação para POST (Criação) e PUT (Edição).
+    - [CRITICO] Tratamento rígido no DELETE: Interceptar HTTP 409 Conflict (Disparado pelo ON DELETE RESTRICT) e renderizar alerta de violação de Foreign Key ("Entidade em uso").
+
+[4] EDITAR_ITEM.HTML
+Errar faz parte. Se o recepcionista cadastrou um pendrive como "Azul" e ele era "Preto", 
+ele precisa dessa tela para corrigir a palavra rapidão. Sem isso, a única opção dele seria 
+apagar o item e cadastrar tudo de novo do zero.
+
+    Acesso: ROLE_ADMIN
+    API: GET /api/itens/{id} -> PUT /api/itens/{id}
+    Elementos Essenciais:
+    - [UI] Formulário espelho do 'cadastrar.html', hidratado com o JSON do GET.
+    - [LOGIC] Dropdown de Status Override: Permitir alteração manual forçada da máquina de estados (ex: transição direta para 'arquivado' / soft-delete).
+
+[5] GESTAO_USUARIOS.HTML
+Aluno esquece a senha o tempo todo. O administrador da recepção precisa de um botão para resetar a senha do cara ali na hora. 
+Mas, para ser seguro, ele tem que confirmar com a própria senha de admin,
+para garantir que não é alguém logado no PC dele de zoeira tentando roubar contas.
+
+    Acesso: ROLE_ADMIN
+    API: GET /api/usuarios | PUT /api/usuarios/{id}/senha
+    Elementos Essenciais:
+    - [UI] DataGrid de usuários filtrável por 'role' (aluno vs admin).
+    - [CRITICO] Modal de Ação "Resetar Senha": O formulário deve obrigatoriamente possuir um input 'Sua Senha de Admin' para popular o parâmetro `senha_admin` exigido pelo payload da API (Validação IDOR).

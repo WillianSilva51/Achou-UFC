@@ -13,7 +13,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="css/styles.css" rel="stylesheet">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/components/admin.css">
@@ -21,8 +20,8 @@
 </head>
 
 <body>
-    <script src="js/app.js"></script>
-    <script>requireAuth('admin');</script>
+    <script src="js/app.js?v=docker-api-20260701"></script>
+    <script src="js/guard-admin.js?v=docker-api-20260701"></script>
 
     <nav class="navbar navbar-expand-lg navbar-ufc">
         <div class="container-fluid">
@@ -31,10 +30,10 @@
                 <span class="brand-title">Achou!<span class="accent"> UFC</span> · Painel</span>
             </a>
             <div class="d-flex align-items-center gap-2">
-                <a href="index.html" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-up-right"></i>
+                <a href="vitrine.html" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-up-right"></i>
                     Vitrine</a>
                 <div class="nav-auth-item">
-                    <a href="login.html" class="nav-link nav-link-login">
+                    <a href="auth_hub.html" class="nav-link nav-link-login">
                         <i class="bi bi-shield-lock"></i>
                         Login
                     </a>
@@ -55,6 +54,10 @@
                             cadastrados</a></li>
                     <li class="nav-item"><a class="nav-link" href="#reivindicacoes"><i
                                 class="bi bi-hand-index-thumb"></i> Reivindicações</a></li>
+                    <li class="nav-item admin-sidebar-separator"><a class="nav-link" href="gestao_entidades.html"><i
+                                class="bi bi-tags"></i> Categorias e Locais</a></li>
+                    <li class="nav-item"><a class="nav-link" href="gestao_usuarios.html"><i
+                                class="bi bi-people"></i> Usuários</a></li>
                 </ul>
             </aside>
 
@@ -140,135 +143,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>
-    <script>
-        const tblItens = document.getElementById('tbl-itens');
-        const tblReiv = document.getElementById('tbl-reiv');
-
-        function itemStatusBadge(status) {
-            const classes = {
-                disponivel: 'text-bg-success',
-                em_analise: 'text-bg-warning',
-                devolvido: 'text-bg-secondary',
-                arquivado: 'text-bg-dark'
-            };
-            const labels = {
-                disponivel: 'Disponivel',
-                em_analise: 'Em analise',
-                devolvido: 'Devolvido',
-                arquivado: 'Arquivado'
-            };
-            return `<span class="badge ${classes[status] || 'text-bg-light'}">${labels[status] || escapeHtml(status)}</span>`;
-        }
-
-        function reivindicacaoBadge(status) {
-            const classes = {
-                pendente: 'text-bg-warning',
-                aprovado: 'text-bg-success',
-                recusado: 'text-bg-secondary'
-            };
-            return `<span class="badge ${classes[status] || 'text-bg-light'}">${escapeHtml(status)}</span>`;
-        }
-
-        function renderItens(itens) {
-            document.getElementById('stat-total').textContent = itens.length;
-            document.getElementById('stat-disp').textContent = itens.filter((item) => item.status === 'disponivel').length;
-            document.getElementById('stat-entr').textContent = itens.filter((item) => item.status === 'devolvido').length;
-
-            if (!itens.length) {
-                tblItens.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhum item cadastrado.</td></tr>';
-                return;
-            }
-
-            tblItens.innerHTML = itens.map((item) => `
-                <tr>
-                    <td>${item.id}</td>
-                    <td>
-                        <strong>${escapeHtml(item.titulo)}</strong>
-                        <div class="small text-muted">${escapeHtml(item.descricao || '')}</div>
-                    </td>
-                    <td>${escapeHtml(item.categoria || nomeCategoria(item.categoria_id))}</td>
-                    <td>${escapeHtml(item.local || nomeLocal(item.local_id))}</td>
-                    <td>${formatDate(item.data_encontrado)}</td>
-                    <td>${itemStatusBadge(item.status)}</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-danger" data-delete-item="${item.id}" title="Arquivar item">
-                            <i class="bi bi-archive"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function renderReivindicacoes(reivindicacoes) {
-            document.getElementById('stat-reiv').textContent = reivindicacoes.length;
-
-            if (!reivindicacoes.length) {
-                tblReiv.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhuma reivindicação recebida.</td></tr>';
-                return;
-            }
-
-            tblReiv.innerHTML = reivindicacoes.map((reivindicacao) => {
-                const pendente = reivindicacao.status_reivindicacao === 'pendente';
-                return `
-                    <tr>
-                        <td>${reivindicacao.id}</td>
-                        <td>${escapeHtml(reivindicacao.item_titulo || '')}</td>
-                        <td>
-                            <strong>${escapeHtml(reivindicacao.aluno_nome || '')}</strong>
-                            <div class="small text-muted">${escapeHtml(reivindicacao.matricula || '')}</div>
-                        </td>
-                        <td>${escapeHtml(reivindicacao.aluno_email || '')}</td>
-                        <td>${formatDate(reivindicacao.data_solicitacao)}</td>
-                        <td>${reivindicacaoBadge(reivindicacao.status_reivindicacao)}</td>
-                        <td class="text-end">
-                            ${pendente ? `
-                                <button class="btn btn-sm btn-outline-success" data-reiv-status="${reivindicacao.id}:aprovado" title="Aprovar">
-                                    <i class="bi bi-check-lg"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" data-reiv-status="${reivindicacao.id}:recusado" title="Recusar">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            ` : ''}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        async function carregarPainel() {
-            try {
-                await Promise.all([AchouApi.listarCategorias(), AchouApi.listarLocais()]);
-                const [itens, reivindicacoes] = await Promise.all([
-                    AchouApi.listarItens(),
-                    AchouApi.listarReivindicacoes()
-                ]);
-                renderItens(itens);
-                renderReivindicacoes(reivindicacoes);
-            } catch (error) {
-                tblItens.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
-                tblReiv.innerHTML = '';
-            }
-        }
-
-        document.addEventListener('click', async (event) => {
-            const deleteButton = event.target.closest('[data-delete-item]');
-            if (deleteButton) {
-                if (!confirm('Arquivar este item?')) return;
-                await AchouApi.excluirItem(deleteButton.dataset.deleteItem);
-                carregarPainel();
-                return;
-            }
-
-            const statusButton = event.target.closest('[data-reiv-status]');
-            if (statusButton) {
-                const [id, status] = statusButton.dataset.reivStatus.split(':');
-                await AchouApi.atualizarStatusReivindicacao(id, status);
-                carregarPainel();
-            }
-        });
-
-        carregarPainel();
-    </script>
+    <script src="js/admin.js?v=docker-api-20260701"></script>
 </body>
 
 </html>

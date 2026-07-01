@@ -11,10 +11,19 @@ use Models\Local;
 
 class ItemController
 {
-    private const STATUS_VALIDOS = ['disponível', 'disponivel', 'devolvido', 'arquivado', 'em_analise'];
-    private const STATUS_CRIACAO = ['disponível', 'disponivel', 'em_analise'];
+    private const STATUS_VALIDOS = ['disponivel', 'devolvido', 'arquivado', 'em_analise'];
+    private const STATUS_CRIACAO = ['disponivel', 'em_analise'];
     private const FOTO_DOMINIOS_PERMITIDOS = [
-        'não.esquecerde.iadicionar.dominios.permitirod.com',
+        'images.unsplash.com',
+        'plus.unsplash.com',
+        'raw.githubusercontent.com',
+        'githubusercontent.com',
+        'i.imgur.com',
+        'imgur.com',
+        'placehold.co',
+        'picsum.photos',
+        'localhost',
+        '127.0.0.1',
     ];
 
     public function store(Request $request): void
@@ -54,10 +63,8 @@ class ItemController
             return;
         }
 
-        $titulo    = htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8');
-        $descricao = !empty($dados['descricao'])
-            ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8')
-            : '';
+        $titulo = $this->sanitizarTexto($dados['titulo'], 255);
+        $descricao = $this->sanitizarTexto($dados['descricao'] ?? '', 5000);
 
         if (mb_strlen($titulo) < 3 || mb_strlen($titulo) > 255) {
             http_response_code(400);
@@ -72,8 +79,8 @@ class ItemController
         }
 
         $statusRaw = !empty($dados['status'])
-            ? strtolower(htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8'))
-            : 'disponível';
+            ? $this->normalizarStatus($dados['status'])
+            : 'disponivel';
 
         if (!in_array($statusRaw, self::STATUS_CRIACAO, true)) {
             http_response_code(400);
@@ -107,7 +114,7 @@ class ItemController
         $data_encontrado = date('Y-m-d');
         if (isset($dados['data_encontrado']) && trim($dados['data_encontrado']) !== '') {
             $data_raw = trim($dados['data_encontrado']);
-            $d        = \DateTime::createFromFormat('Y-m-d', $data_raw);
+            $d        = \DateTime::createFromFormat('!Y-m-d', $data_raw);
             if (!$d || $d->format('Y-m-d') !== $data_raw) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Formato de data inválido. Use AAAA-MM-DD.']);
@@ -131,6 +138,19 @@ class ItemController
         $itemModel = new ItemPerdido();
 
         try {
+            if ($itemModel->findActiveDuplicate(
+                $titulo,
+                $descricao,
+                $data_encontrado,
+                $local_id,
+                $categoria_id,
+                $registrado_por
+            )) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Este item já foi cadastrado com os mesmos dados. Revise a lista antes de reenviar.']);
+                return;
+            }
+
             $id = $itemModel->create(
                 $titulo,
                 $descricao,
@@ -170,7 +190,7 @@ class ItemController
         $filtros = [];
 
         if (!empty($query['status'])) {
-            $statusFiltro = strtolower(htmlspecialchars(strip_tags($query['status']), ENT_QUOTES, 'UTF-8'));
+            $statusFiltro = $this->normalizarStatus($query['status']);
             if (in_array($statusFiltro, self::STATUS_VALIDOS, true)) {
                 $filtros['status'] = $statusFiltro;
             }
@@ -185,7 +205,7 @@ class ItemController
         }
 
         if (!empty($query['busca'])) {
-            $filtros['busca'] = htmlspecialchars(strip_tags($query['busca']), ENT_QUOTES, 'UTF-8');
+            $filtros['busca'] = $this->sanitizarTexto($query['busca'], 120);
         }
 
         $itemModel = new ItemPerdido();
@@ -286,10 +306,8 @@ class ItemController
             return;
         }
 
-        $titulo    = htmlspecialchars(strip_tags($dados['titulo']), ENT_QUOTES, 'UTF-8');
-        $descricao = !empty($dados['descricao'])
-            ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8')
-            : '';
+        $titulo = $this->sanitizarTexto($dados['titulo'], 255);
+        $descricao = $this->sanitizarTexto($dados['descricao'] ?? '', 5000);
 
         if (mb_strlen($titulo) < 3 || mb_strlen($titulo) > 255) {
             http_response_code(400);
@@ -312,8 +330,22 @@ class ItemController
             return;
         }
 
+        $categoriaModel = new Categoria();
+        if (!$categoriaModel->findById($categoria_id)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'categoria_id informado não existe.']);
+            return;
+        }
+
+        $localModel = new Local();
+        if (!$localModel->findById($local_id)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'local_id informado não existe.']);
+            return;
+        }
+
         if (!empty($dados['status'])) {
-            $statusRaw = strtolower(htmlspecialchars(strip_tags($dados['status']), ENT_QUOTES, 'UTF-8'));
+            $statusRaw = $this->normalizarStatus($dados['status']);
             if (!in_array($statusRaw, self::STATUS_VALIDOS, true)) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Status do item inválido. Use: ' . implode(', ', self::STATUS_VALIDOS)]);
@@ -326,7 +358,7 @@ class ItemController
 
         if (!empty($dados['data_encontrado'])) {
             $data_raw = trim($dados['data_encontrado']);
-            $d        = \DateTime::createFromFormat('Y-m-d', $data_raw);
+            $d        = \DateTime::createFromFormat('!Y-m-d', $data_raw);
             if (!$d || $d->format('Y-m-d') !== $data_raw) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Formato de data inválido. Use AAAA-MM-DD.']);
@@ -358,6 +390,20 @@ class ItemController
         }
 
         try {
+            if ($itemModel->findActiveDuplicate(
+                $titulo,
+                $descricao,
+                $data_encontrado,
+                $local_id,
+                $categoria_id,
+                (int) $itemAtual['registrado_por'],
+                $id
+            )) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe outro item ativo com os mesmos dados.']);
+                return;
+            }
+
             $itemModel->update(
                 $id,
                 $titulo,
@@ -421,6 +467,39 @@ class ItemController
      *
      * @return string|null|false  string = URL válida, null = sem foto, false = URL inválida
      */
+    private function sanitizarTexto(mixed $valor, int $limite): string
+    {
+        if (!is_string($valor)) {
+            return '';
+        }
+
+        $texto = preg_replace('/\s+/u', ' ', trim(strip_tags($valor))) ?? '';
+        $texto = htmlspecialchars($texto, ENT_QUOTES, 'UTF-8');
+
+        if (mb_strlen($texto) > $limite) {
+            return '';
+        }
+
+        return $texto;
+    }
+
+    private function normalizarStatus(mixed $status): string
+    {
+        if (!is_string($status)) {
+            return '';
+        }
+
+        $status = strtolower(trim(strip_tags($status)));
+        $status = str_replace('í', 'i', $status);
+
+        return match ($status) {
+            'disponível', 'disponivel' => 'disponivel',
+            'reivindicado' => 'em_analise',
+            'entregue' => 'devolvido',
+            default => $status,
+        };
+    }
+
     private function validarFotoUrl(?string $rawUrl): string|null|false
     {
         if (empty($rawUrl)) {

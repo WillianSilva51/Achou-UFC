@@ -1,5 +1,16 @@
 const AUTH_KEY = 'achou_ufc_auth';
 const API_BASE_URL = window.ACHOU_API_BASE_URL || detectApiBaseUrl();
+const SAFE_REDIRECT_PAGES = new Set([
+    'admin.html',
+    'cadastrar.html',
+    'editar_item.html',
+    'gestao_entidades.html',
+    'gestao_usuarios.html',
+    'minhas_reivindicacoes.html',
+    'perfil.html',
+    'reivindicar.html',
+    'vitrine.html'
+]);
 
 let categorias = [];
 let locais = [];
@@ -23,21 +34,41 @@ const ICONES_POR_NOME = {
 
 function getAuth() {
     try {
-        return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
-    } catch {
         localStorage.removeItem(AUTH_KEY);
+
+        const auth = JSON.parse(sessionStorage.getItem(AUTH_KEY) || 'null');
+        if (!auth) return null;
+
+        if (!isValidAuth(auth)) {
+            clearAuth();
+            return null;
+        }
+
+        return auth;
+    } catch {
+        clearStoredAuth();
         return null;
     }
 }
 
 function setAuth(auth) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    if (!isValidAuth(auth)) {
+        throw apiError('Sessão inválida recebida do servidor.', 401);
+    }
+
+    clearStoredAuth();
+    sessionStorage.setItem(AUTH_KEY, JSON.stringify(auth));
     renderAuthArea();
 }
 
 function clearAuth() {
-    localStorage.removeItem(AUTH_KEY);
+    clearStoredAuth();
     renderAuthArea();
+}
+
+function clearStoredAuth() {
+    sessionStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(AUTH_KEY);
 }
 
 function authToken() {
@@ -54,11 +85,17 @@ function isLoggedIn() {
 
 function requireAuth(role = null) {
     const user = authUser();
-    if (!isLoggedIn() || (role && user?.role !== role)) {
-        const next = encodeURIComponent(`${location.pathname.split('/').pop() || 'index.html'}${location.search}`);
+    if (!isLoggedIn()) {
+        const next = encodeURIComponent(`${location.pathname.split('/').pop() || 'auth_hub.html'}${location.search}`);
         location.href = `login.html?next=${next}`;
         return false;
     }
+
+    if (role && user?.role !== role) {
+        location.href = authHomeFor(user);
+        return false;
+    }
+
     return true;
 }
 
@@ -76,14 +113,14 @@ async function logout() {
 }
 
 function authHomeFor(user = authUser()) {
-    return user?.role === 'admin' ? 'admin.html' : 'index.html';
+    return user?.role === 'admin' ? 'admin.html' : 'vitrine.html';
 }
 
 function redirectIfAuthenticated() {
     if (!isLoggedIn()) return false;
 
     const next = new URLSearchParams(location.search).get('next');
-    location.href = next || authHomeFor();
+    location.href = safeRedirectTarget(next, authHomeFor());
     return true;
 }
 
@@ -99,9 +136,9 @@ function renderAuthArea() {
 
         if (!user) {
             item.innerHTML = `
-                <a href="login.html" class="nav-link nav-link-login">
+                <a href="auth_hub.html" class="nav-link nav-link-login">
                     <i class="bi bi-shield-lock"></i>
-                    Login
+                    Acessar
                 </a>
             `;
             return;
@@ -109,6 +146,9 @@ function renderAuthArea() {
 
         item.innerHTML = `
             <div class="nav-user d-flex flex-column flex-lg-row align-items-lg-center gap-2">
+                ${user.role === 'admin'
+                ? '<a href="admin.html" class="nav-link nav-user-name"><i class="bi bi-speedometer2"></i> Painel</a>'
+                : '<a href="minhas_reivindicacoes.html" class="nav-link nav-user-name"><i class="bi bi-list-check"></i> Minhas reivindicações</a>'}
                 <a href="perfil.html" class="nav-link nav-user-name">
                     <i class="bi bi-person-circle"></i>
                     ${escapeHtml(user.nome || user.email || 'Usuário')}
@@ -120,6 +160,51 @@ function renderAuthArea() {
             </div>
         `;
     });
+}
+
+function parseJwtPayload(token) {
+    if (typeof token !== 'string' || token.split('.').length !== 3) return null;
+
+    try {
+        const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        const padded = payload.padEnd(payload.length + ((4 - payload.length % 4) % 4), '=');
+        return JSON.parse(atob(padded));
+    } catch {
+        return null;
+    }
+}
+
+function isValidAuth(auth) {
+    if (!auth?.token || !auth?.usuario?.id || !auth?.usuario?.role) return false;
+    if (!['admin', 'aluno'].includes(auth.usuario.role)) return false;
+
+    const payload = parseJwtPayload(auth.token);
+    if (!payload?.exp || !payload?.sub || !payload?.role) return false;
+    if (Number(payload.exp) <= Math.floor(Date.now() / 1000)) return false;
+    if (String(payload.sub) !== String(auth.usuario.id)) return false;
+    if (payload.role !== auth.usuario.role) return false;
+
+    return true;
+}
+
+function safeRedirectTarget(target, fallback = 'auth_hub.html') {
+    if (!target) return fallback;
+
+    try {
+        const decoded = decodeURIComponent(String(target)).trim();
+        if (!decoded || decoded.includes('\\') || decoded.startsWith('//')) return fallback;
+        if (/^[a-z][a-z0-9+.-]*:/i.test(decoded)) return fallback;
+
+        const url = new URL(decoded, location.href);
+        if (url.origin !== location.origin) return fallback;
+
+        const file = url.pathname.split('/').pop() || 'auth_hub.html';
+        if (!SAFE_REDIRECT_PAGES.has(file)) return fallback;
+
+        return `${file}${url.search}${url.hash}`;
+    } catch {
+        return fallback;
+    }
 }
 
 async function recaptchaToken() {
@@ -233,9 +318,25 @@ function normalizeItem(item) {
         local_id: item.local_id != null ? Number(item.local_id) : localIdPorNome(item.local),
         categoria: item.categoria || nomeCategoria(item.categoria_id),
         local: item.local || nomeLocal(item.local_id),
-        foto_url: item.foto_url || '',
+        foto_url: safeImageUrl(item.foto_url || ''),
         status: normalizeStatus(item.status)
     };
+}
+
+function safeImageUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw || raw.startsWith('//') || raw.includes('\\')) return '';
+
+    try {
+        const url = new URL(raw, location.origin);
+        if (!['http:', 'https:'].includes(url.protocol)) return '';
+        if (url.origin === location.origin && /^[a-z][a-z0-9+.-]*:/i.test(raw)) {
+            return url.href;
+        }
+        return raw;
+    } catch {
+        return '';
+    }
 }
 
 function normalizeStatus(status) {
@@ -318,6 +419,12 @@ const AchouApi = {
         });
     },
 
+    async listarUsuarios(filtros = {}) {
+        const params = new URLSearchParams({ limit: '100', ...limparFiltros(filtros) });
+        const payload = await apiRequest(`/api/usuarios?${params.toString()}`);
+        return payload.data || [];
+    },
+
     async listarItens(filtros = {}) {
         const params = new URLSearchParams({ limit: '100', ...limparFiltros(filtros) });
         const payload = await apiRequest(`/api/itens?${params.toString()}`);
@@ -333,6 +440,10 @@ const AchouApi = {
         return apiRequest('/api/itens', { method: 'POST', body: dados });
     },
 
+    async atualizarItem(id, dados) {
+        return apiRequest(`/api/itens/${id}`, { method: 'PUT', body: dados });
+    },
+
     async excluirItem(id) {
         return apiRequest(`/api/itens/${id}`, { method: 'DELETE' });
     },
@@ -342,9 +453,33 @@ const AchouApi = {
         return setCategorias(payload.data || []);
     },
 
+    async criarCategoria(dados) {
+        return apiRequest('/api/categorias', { method: 'POST', body: dados });
+    },
+
+    async atualizarCategoria(id, dados) {
+        return apiRequest(`/api/categorias/${id}`, { method: 'PUT', body: dados });
+    },
+
+    async excluirCategoria(id) {
+        return apiRequest(`/api/categorias/${id}`, { method: 'DELETE' });
+    },
+
     async listarLocais() {
         const payload = await apiRequest('/api/locais');
         return setLocais(payload.data || []);
+    },
+
+    async criarLocal(dados) {
+        return apiRequest('/api/locais', { method: 'POST', body: dados });
+    },
+
+    async atualizarLocal(id, dados) {
+        return apiRequest(`/api/locais/${id}`, { method: 'PUT', body: dados });
+    },
+
+    async excluirLocal(id) {
+        return apiRequest(`/api/locais/${id}`, { method: 'DELETE' });
     },
 
     async listarReivindicacoes(filtros = {}) {
@@ -364,8 +499,6 @@ const AchouApi = {
         });
     }
 };
-
-const mockApi = AchouApi;
 
 document.addEventListener('DOMContentLoaded', () => {
     renderAuthArea();

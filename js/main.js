@@ -13,8 +13,8 @@ let itens = [];
 
 function renderSelect(select, opcoes, labelPadrao) {
     select.innerHTML = [
-        `<option value="">${labelPadrao}</option>`,
-        ...opcoes.map((opcao) => `<option value="${opcao.id}">${escapeHtml(opcao.nome)}</option>`)
+        `<option value="">${escapeHtml(labelPadrao)}</option>`,
+        ...opcoes.map((opcao) => `<option value="${escapeHtml(String(opcao.id))}">${escapeHtml(opcao.nome)}</option>`)
     ].join('');
 }
 
@@ -33,6 +33,7 @@ function renderItem(item) {
     const titulo = escapeHtml(item.titulo);
     const descricao = escapeHtml(item.descricao);
     const status = escapeHtml(item.status);
+    const itemId = encodeURIComponent(String(item.id));
     const categoria = escapeHtml(item.categoria || nomeCategoria(item.categoria_id));
     const local = escapeHtml(item.local || nomeLocal(item.local_id));
 
@@ -55,7 +56,7 @@ function renderItem(item) {
                     </ul>
                     ${item.status !== 'disponivel'
             ? '<button class="btn btn-outline-secondary w-100" disabled>Indisponivel</button>'
-            : `<a class="btn btn-ufc w-100" href="reivindicar.html?id=${item.id}">
+            : `<a class="btn btn-ufc w-100" href="reivindicar.html?id=${itemId}">
                             <i class="bi bi-hand-index-thumb"></i> Reivindicar
                         </a>`}
                 </div>
@@ -102,10 +103,10 @@ function renderItens() {
 async function init() {
     try {
         const [categorias, locais] = await Promise.all([
-            mockApi.listarCategorias(),
-            mockApi.listarLocais()
+            AchouApi.listarCategorias(),
+            AchouApi.listarLocais()
         ]);
-        itens = await mockApi.listarItens();
+        itens = await AchouApi.listarItens();
         renderSelect(elementos.categoria, categorias, 'Todas');
         renderSelect(elementos.local, locais, 'Todos');
         renderItens();
@@ -115,7 +116,7 @@ async function init() {
                 <div class="col-12">
                     <div class="alert alert-warning text-center">
                         Faça login para visualizar e reivindicar os itens encontrados.
-                        <a class="alert-link" href="login.html?next=index.html">Entrar</a>
+                        <a class="alert-link" href="login.html?next=vitrine.html">Entrar</a>
                     </div>
                 </div>
             `;

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Achou! UFC Quixadá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/components/auth.css">
+</head>
+
+<body class="auth-hub-page">
+    <div class="hub-wrapper">
+        <div class="hub-card">
+            <div class="row g-0">
+
+                <!-- Lado esquerdo: identidade visual -->
+                <div class="col-sm-5 hub-brand">
+                    <img src="assets/images/Brasao4_vertical_cor_300dpi.png" alt="Brasão UFC">
+                    <div>
+                        <div class="hub-brand-title">Achou!<span> UFC</span></div>
+                        <div class="hub-brand-sub mt-1">Sistema de Achados e Perdidos<br>Campus Quixadá</div>
+                    </div>
+                    <span class="hub-badge"><i class="bi bi-geo-alt-fill"></i> Campus Quixadá</span>
+
+                    <div class="hub-brand-copy mt-3">
+                        Perdeu algo no campus?<br>
+                        Encontrou um objeto?<br>
+                        A gente conecta você.
+                    </div>
+                </div>
+
+                <!-- Lado direito: ações -->
+                <div class="col-sm-7 hub-actions">
+                    <h2>Bem-vindo(a)!</h2>
+                    <p>Selecione uma opção para começar:</p>
+
+                    <!-- CTA 1: entrar -->
+                    <a href="login.html" class="btn-hub-primary">
+                        <span class="btn-hub-icon"><i class="bi bi-box-arrow-in-right"></i></span>
+                        <span class="btn-hub-text">
+                            Já tenho conta — Entrar
+                            <small>Acesse com seu e-mail e senha</small>
+                        </span>
+                    </a>
+
+                    <div class="hub-divider">ou</div>
+
+                    <!-- CTA 2: cadastrar -->
+                    <a href="register.html" class="btn-hub-secondary">
+                        <span class="btn-hub-icon"><i class="bi bi-person-plus-fill"></i></span>
+                        <span class="btn-hub-text">
+                            Sou novo aqui — Cadastrar
+                            <small>Crie sua conta de aluno</small>
+                        </span>
+                    </a>
+
+                    <!-- Link discreto para ver sem login -->
+                    <div class="hub-public-link">
+                        <a href="vitrine.html">
+                            <i class="bi bi-eye"></i>
+                            Ver vitrine de itens sem entrar
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <p class="hub-footer-note text-center mt-3">
+            Setor de Recepção e Vigilância · UFC Quixadá &copy; 2026
+        </p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+    <script src="js/app.js?v=docker-api-20260701"></script>
+    <script src="js/auth-hub.js?v=docker-api-20260701"></script>
+</body>
+
+</html>

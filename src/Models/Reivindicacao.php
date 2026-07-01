@@ -70,11 +70,15 @@ class Reivindicacao extends BaseModel
                        r.status_reivindicacao,
                        r.data_solicitacao,
                        i.titulo     AS item_titulo,
+                       c.nome        AS categoria,
+                       l.nome_local  AS local,
                        u.nome       AS aluno_nome,
                        u.email      AS aluno_email,
                        a.matricula
                 FROM {$this->table} r
                 INNER JOIN item_perdido i ON r.item_id   = i.id
+                LEFT JOIN categoria c     ON i.categoria_id = c.id
+                LEFT JOIN local l         ON i.local_id = l.id
                 INNER JOIN aluno        a ON r.aluno_id  = a.aluno_id
                 INNER JOIN usuario      u ON a.aluno_id  = u.id"
             . $whereData['sql']
@@ -170,7 +174,7 @@ class Reivindicacao extends BaseModel
             throw new \InvalidArgumentException("Status de reivindicação inválido: {$novo_status}.");
         }
 
-        $statusItemValidos = ['disponível', 'disponivel', 'devolvido', 'arquivado', 'em_analise'];
+        $statusItemValidos = ['disponivel', 'devolvido', 'arquivado', 'em_analise'];
         if (!in_array(strtolower($status_item), $statusItemValidos, true)) {
             throw new \InvalidArgumentException("Status de item inválido: {$status_item}.");
         }

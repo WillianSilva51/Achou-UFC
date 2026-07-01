@@ -37,6 +37,10 @@ class Environment
                 $key = trim($key);
                 $value = trim($value);
 
+                if (getenv($key) !== false || array_key_exists($key, $_ENV)) {
+                    continue;
+                }
+
                 // Remove aspas duplas ou simples que envolvam o valor
                 $value = trim($value, '"\'');
 

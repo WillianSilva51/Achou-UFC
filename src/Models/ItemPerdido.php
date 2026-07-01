@@ -9,7 +9,7 @@ class ItemPerdido extends BaseModel
 {
     protected string $table = 'item_perdido';
 
-    private const STATUS_VALIDOS = ['disponível', 'disponivel', 'devolvido', 'arquivado', 'em_analise'];
+    private const STATUS_VALIDOS = ['disponivel', 'devolvido', 'arquivado', 'em_analise'];
 
     public function create(
         string  $titulo,
@@ -19,7 +19,7 @@ class ItemPerdido extends BaseModel
         int     $local_id,
         int     $categoria_id,
         int     $registrado_por,
-        string  $status = 'disponível'
+        string  $status = 'disponivel'
     ): int {
         $sql = "INSERT INTO {$this->table}
                     (titulo, descricao, data_encontrado, status, foto_url, local_id, categoria_id, registrado_por)
@@ -88,6 +88,49 @@ class ItemPerdido extends BaseModel
         $sql  = "UPDATE {$this->table} SET status = :status WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute(['status' => $statusLimpo, 'id' => $id]);
+    }
+
+    public function findActiveDuplicate(
+        string $titulo,
+        string $descricao,
+        string $data_encontrado,
+        int $local_id,
+        int $categoria_id,
+        int $registrado_por,
+        ?int $exceptId = null
+    ): ?array {
+        $sql = "SELECT id
+                FROM {$this->table}
+                WHERE LOWER(BTRIM(titulo)) = LOWER(BTRIM(:titulo))
+                  AND COALESCE(LOWER(BTRIM(descricao)), '') = COALESCE(LOWER(BTRIM(:descricao)), '')
+                  AND data_encontrado = :data_encontrado
+                  AND local_id = :local_id
+                  AND categoria_id = :categoria_id
+                  AND registrado_por = :registrado_por
+                  AND status <> 'arquivado'
+                ";
+
+        $params = [
+            'titulo'          => $titulo,
+            'descricao'       => $descricao,
+            'data_encontrado' => $data_encontrado,
+            'local_id'        => $local_id,
+            'categoria_id'    => $categoria_id,
+            'registrado_por'  => $registrado_por,
+        ];
+
+        if ($exceptId !== null) {
+            $sql .= " AND id <> :except_id";
+            $params['except_id'] = $exceptId;
+        }
+
+        $sql .= " ORDER BY id DESC LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result !== false ? $result : null;
     }
 
     private function buildWhereClause(array $filtros): array

@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Categorias e Locais — Achou! UFC Quixadá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/components/admin.css">
+    <link rel="stylesheet" href="css/sections/nav.css">
+</head>
+
+<body class="admin-page">
+    <!-- Auth guard: só admin entra -->
+    <script src="js/app.js?v=docker-api-20260701"></script>
+    <script src="js/guard-admin.js?v=docker-api-20260701"></script>
+
+    <!-- ── Navbar ── -->
+    <nav class="navbar navbar-expand-lg navbar-ufc">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="admin.html">
+                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" alt="UFC" class="brand-logo">
+                <span class="brand-title">Achou!<span class="accent"> UFC</span> · Painel</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="vitrine.html" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-box-arrow-up-right"></i> Vitrine
+                </a>
+                <div class="nav-auth-item">
+                    <a href="auth_hub.html" class="nav-link nav-link-login">
+                        <i class="bi bi-shield-lock"></i> Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── Layout admin: sidebar + main ── -->
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+
+            <!-- Sidebar -->
+            <aside class="col-md-3 col-lg-2 admin-sidebar p-0">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin.html">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="cadastrar.html">
+                            <i class="bi bi-plus-circle"></i> Cadastrar item
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin.html#itens">
+                            <i class="bi bi-box-seam"></i> Itens cadastrados
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin.html#reivindicacoes">
+                            <i class="bi bi-hand-index-thumb"></i> Reivindicações
+                        </a>
+                    </li>
+                    <li class="nav-item admin-sidebar-separator">
+                        <a class="nav-link sidebar-link-active" href="gestao_entidades.html">
+                            <i class="bi bi-tags"></i> Categorias e Locais
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="gestao_usuarios.html">
+                            <i class="bi bi-people"></i> Usuários
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+
+            <!-- Conteúdo principal -->
+            <main class="col-md-9 col-lg-10 py-4 px-3 px-md-4">
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-0">Categorias e Locais</h4>
+                        <small class="text-muted">Gerencie as entidades usadas nos itens cadastrados.</small>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+
+                    <!-- ══════════ CARD CATEGORIAS ══════════ -->
+                    <div class="col-lg-6">
+                        <div class="entity-card h-100">
+                            <div class="card-header">
+                                <h6><i class="bi bi-tag-fill text-warning me-2"></i>Categorias</h6>
+                                <button class="btn btn-sm btn-ufc" data-entity-new="categoria">
+                                    <i class="bi bi-plus-lg"></i> Nova
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="loading-cat" class="text-center py-4">
+                                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                                </div>
+                                <table class="table table-hover mb-0 d-none" id="tbl-cat">
+                                    <tbody id="tbody-cat"></tbody>
+                                </table>
+                                <div class="tbl-empty d-none" id="empty-cat">
+                                    <i class="bi bi-tag"></i>
+                                    Nenhuma categoria cadastrada.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ══════════ CARD LOCAIS ══════════ -->
+                    <div class="col-lg-6">
+                        <div class="entity-card h-100">
+                            <div class="card-header">
+                                <h6><i class="bi bi-geo-alt-fill text-danger me-2"></i>Locais</h6>
+                                <button class="btn btn-sm btn-ufc" data-entity-new="local">
+                                    <i class="bi bi-plus-lg"></i> Novo
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="loading-loc" class="text-center py-4">
+                                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                                </div>
+                                <table class="table table-hover mb-0 d-none" id="tbl-loc">
+                                    <tbody id="tbody-loc"></tbody>
+                                </table>
+                                <div class="tbl-empty d-none" id="empty-loc">
+                                    <i class="bi bi-geo-alt"></i>
+                                    Nenhum local cadastrado.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         MODAL: Criar / Editar entidade (reutilizado para os dois tipos)
+    ══════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="modalEntidade" tabindex="-1" aria-labelledby="modalEntidadeTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="modalEntidadeTitulo">Nova entidade</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" id="label-nome-entidade">Nome</label>
+                        <input type="text" class="form-control" id="input-nome-entidade"
+                            placeholder="Ex: Eletrônicos" maxlength="120" required>
+                        <div class="invalid-feedback">Informe um nome para esta entidade.</div>
+                    </div>
+                    <div class="alert alert-danger d-none small py-2" id="erro-modal-entidade"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-ufc" id="btn-salvar-entidade">
+                        <i class="bi bi-save"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         MODAL: Conflito de chave estrangeira (HTTP 409)
+    ══════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="modalConflito" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header modal-header-warning">
+                    <h5 class="modal-title fw-bold modal-title-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Não foi possível excluir
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        <strong id="conflito-tipo-label"></strong>
+                        "<strong id="conflito-nome-label"></strong>"
+                        está vinculada a um ou mais itens cadastrados no sistema.
+                    </p>
+                    <p class="text-muted mb-0 small">
+                        Para excluí-la, primeiro edite ou remova todos os itens que utilizam esta entidade.
+                        Você pode fazer isso na seção
+                        <a href="admin.html#itens" class="text-primary fw-semibold">Itens cadastrados</a>.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de feedback (sucesso / erro rápido) -->
+    <div class="toast-container">
+        <div id="toast-feedback" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fw-semibold" id="toast-texto"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+    <script src="js/gestao-entidades.js?v=docker-api-20260701"></script>
+</body>
+
+</html>

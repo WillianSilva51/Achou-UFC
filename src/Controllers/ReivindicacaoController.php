@@ -67,12 +67,6 @@ class ReivindicacaoController
         header('Content-Type: application/json');
         $usuarioLogado = AuthMiddleware::handle();
 
-        if ($usuarioLogado->role !== 'admin') {
-            http_response_code(403);
-            echo json_encode(['error' => 'Acesso negado. Apenas administradores podem listar reivindicações.']);
-            return;
-        }
-
         $query = $request->getQuery();
 
         $page  = isset($query['page'])  ? (int) $query['page']  : 1;
@@ -94,6 +88,14 @@ class ReivindicacaoController
 
         if (!empty($query['aluno_id'])) {
             $filtros['aluno_id'] = (int) $query['aluno_id'];
+        }
+
+        if ($usuarioLogado->role === 'aluno') {
+            $filtros['aluno_id'] = (int) $usuarioLogado->sub;
+        } elseif ($usuarioLogado->role !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acesso negado.']);
+            return;
         }
 
         $reivindicacaoModel = new Reivindicacao();
@@ -168,7 +170,7 @@ class ReivindicacaoController
             }
 
             $item_id    = $reivindicacao['item_id'];
-            $status_item = ($novo_status === 'aprovado') ? 'devolvido' : 'disponível';
+            $status_item = ($novo_status === 'aprovado') ? 'devolvido' : 'disponivel';
 
             $reivindicacaoModel->processarAvaliacao($id, $novo_status, $item_id, $status_item);
 

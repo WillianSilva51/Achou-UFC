@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS item_perdido (
     local_id BIGINT NOT NULL REFERENCES local(id),
     categoria_id BIGINT NOT NULL REFERENCES categoria(id),
     registrado_por BIGINT NOT NULL REFERENCES usuario(id),
-    status VARCHAR(30) NOT NULL DEFAULT 'disponível'
+    status VARCHAR(30) NOT NULL DEFAULT 'disponivel'
 );
 
 CREATE TABLE IF NOT EXISTS reivindicacao (
@@ -76,3 +76,18 @@ INSERT INTO local (nome_local, descricao) VALUES
     ('Quadra', 'Area esportiva'),
     ('Recepcao', 'Recepcao e portaria principal')
 ON CONFLICT (nome_local) DO NOTHING;
+
+INSERT INTO usuario (id, nome, email, senha, role) VALUES
+    (1, 'Administrador Local', 'admin@ufc.br', '$2y$12$0.HR279q32JLmJGIUMLM/egpSOTwQx6ly7QHZdF8J6g16HTqpj.Oi', 'admin'),
+    (2, 'Aluno Local', 'aluno@alu.ufc.br', '$2y$12$mpePF4SZ1o.w6VKsOpx9UehdcmlfsIhfX5DaXifJdbhayRBT6jmPS', 'aluno')
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO administracao (id, siap) VALUES
+    (1, 123456)
+ON CONFLICT (siap) DO NOTHING;
+
+INSERT INTO aluno (aluno_id, matricula) VALUES
+    (2, '123456789')
+ON CONFLICT (matricula) DO NOTHING;
+
+SELECT setval(pg_get_serial_sequence('usuario', 'id'), GREATEST((SELECT MAX(id) FROM usuario), 1), true);
