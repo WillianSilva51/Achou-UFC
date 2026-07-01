@@ -99,6 +99,14 @@ class AuthController
             return;
         }
 
+        $dominio_valido = preg_match('/^[a-zA-Z0-9._%+-]+@(alu\.)?ufc\.br$/', $email);
+
+        if (!$dominio_valido) {
+            http_response_code(400); 
+            echo json_encode(['error' => 'Apenas e-mails institucionais (@ufc.br ou @alu.ufc.br) são permitidos.']);
+            return;
+        }
+
         $usuarioModel = new \Models\Usuario();
         $pdo = \Core\Database::getConnection();
 
