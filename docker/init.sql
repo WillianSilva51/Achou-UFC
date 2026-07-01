@@ -71,8 +71,13 @@ ON CONFLICT (nome) DO NOTHING;
 INSERT INTO local (nome_local, descricao) VALUES
     ('Bloco 1', 'Salas e corredores do Bloco 1'),
     ('Bloco 2', 'Salas e corredores do Bloco 2'),
+    ('Bloco 3', 'Salas e corredores do Bloco 3'),
+    ('Bloco 4', 'Salas e corredores do Bloco 4'),
+    ('Bloco 5', 'Salas e corredores do Bloco 5'),
     ('Biblioteca', 'Biblioteca do campus'),
     ('Restaurante Universitario', 'Area do restaurante universitario'),
-    ('Quadra', 'Area esportiva'),
-    ('Recepcao', 'Recepcao e portaria principal')
+    ('Recepcao', 'Recepcao e portaria principal'),
+    ('Estacionamento', 'Area de estacionamento do campus'),
+    ('Laboratorio', 'Laboratorios do campus'),
+    ('Area de Convivencia', 'Area de convivência do campus')
 ON CONFLICT (nome_local) DO NOTHING;
