@@ -21,14 +21,15 @@ class ReivindicacaoController
         }
 
         $dados    = $request->getBody();
-        $item_id  = isset($dados['item_id']) ? (int) $dados['item_id'] : 0;
-        $aluno_id = (int) $usuarioLogado->sub;
-
-        if ($item_id <= 0) {
+        if (!isset($dados['item_id']) || !is_int($dados['item_id']) || $dados['item_id'] <= 0) {
             http_response_code(400);
-            echo json_encode(['error' => 'ID do item é obrigatório e deve ser um número válido.']);
+            echo json_encode(['error' => 'O ID do item é obrigatório e deve ser um número inteiro estrito positivo.']);
             return;
         }
+
+        $item_id  = $dados['item_id'];
+        $aluno_id = (int) $usuarioLogado->sub;
+
 
         try {
             $reivindicacaoModel = new Reivindicacao();
