@@ -293,7 +293,7 @@ function buildItemMarkup(item, userState) {
 
     const modalBody = createElement('div', 'modal-body');
     const confirmationText = createElement('p', 'mb-2');
-    confirmationText.textContent = 'Após confirmar a reivindicação, você terá apenas 4 horas para retirar o item na recepção.';
+    confirmationText.textContent = 'Após confirmar a reivindicação, o pedido entrará em análise. Caso seja aprovado, você terá apenas 4 horas para retirar o item na recepção.';
 
     const confirmationQuestion = createElement('p', 'mb-0 fw-semibold');
     confirmationQuestion.textContent = 'Você tem certeza que deseja fazer isso?';
@@ -380,7 +380,9 @@ function bindReivindicacaoForm(item) {
         if (submitButton) submitButton.disabled = true;
         if (confirmButton) {
             confirmButton.disabled = true;
-            confirmButton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Enviando...';
+            const spinner = createElement('span', 'spinner-border spinner-border-sm');
+            spinner.setAttribute('aria-hidden', 'true');
+            confirmButton.replaceChildren(spinner, document.createTextNode(' Enviando...'));
         }
 
         let novo;
@@ -391,7 +393,10 @@ function bindReivindicacaoForm(item) {
             if (submitButton) submitButton.disabled = false;
             if (confirmButton) {
                 confirmButton.disabled = false;
-                confirmButton.innerHTML = '<i class="bi bi-check2-circle"></i> Sim, enviar reivindicação';
+                confirmButton.replaceChildren(
+                    createElement('i', 'bi bi-check2-circle'),
+                    document.createTextNode(' Sim, enviar reivindicação')
+                );
             }
             setFeedbackMessage(error.message, 'danger');
             return;

@@ -11,21 +11,28 @@ function mostrarToast(msg, tipo = 'success') {
 
 function renderLinha(tipo, entidade) {
     const tr = document.createElement('tr');
+    const nameCell = domEl('td', 'ps-3 entity-name');
+    const actionsCell = domEl('td', 'text-end pe-3');
+
     tr.className = 'entity-row';
     tr.dataset.id = entidade.id;
     tr.dataset.nome = entidade.nome;
     tr.dataset.tipo = tipo;
-    tr.innerHTML = `
-        <td class="ps-3 entity-name">${escapeHtml(entidade.nome)}</td>
-        <td class="text-end pe-3">
-            <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" data-entity-edit>
-                <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" title="Excluir" data-entity-delete>
-                <i class="bi bi-trash3"></i>
-            </button>
-        </td>`;
+    nameCell.textContent = entidade.nome;
+    actionsCell.append(
+        criarBotaoAcao('btn btn-sm btn-outline-secondary me-1', 'Editar', 'data-entity-edit', 'bi-pencil'),
+        criarBotaoAcao('btn btn-sm btn-outline-danger', 'Excluir', 'data-entity-delete', 'bi-trash3')
+    );
+    tr.append(nameCell, actionsCell);
+
     return tr;
+}
+
+function criarBotaoAcao(className, title, dataAttribute, iconClass) {
+    const button = domEl('button', className, { title });
+    button.setAttribute(dataAttribute, '');
+    button.appendChild(domIcon(iconClass));
+    return button;
 }
 
 function renderTabela(tipo, lista) {
@@ -44,8 +51,7 @@ function renderTabela(tipo, lista) {
     }
 
     empty.classList.add('d-none');
-    tbody.innerHTML = '';
-    lista.forEach((entidade) => tbody.appendChild(renderLinha(tipo, entidade)));
+    tbody.replaceChildren(...lista.map((entidade) => renderLinha(tipo, entidade)));
     tbl.classList.remove('d-none');
 }
 
@@ -105,7 +111,7 @@ async function salvarEntidade() {
     erroEl.classList.add('d-none');
     salvandoEntidade = true;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Salvando...';
+    btn.replaceChildren(domEl('span', 'spinner-border spinner-border-sm me-1'), document.createTextNode(' Salvando...'));
 
     try {
         const ehEdicao = modalId !== null;
@@ -129,7 +135,7 @@ async function salvarEntidade() {
     } finally {
         salvandoEntidade = false;
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-save"></i> Salvar';
+        btn.replaceChildren(domIcon('bi-save'), document.createTextNode(' Salvar'));
     }
 }
 

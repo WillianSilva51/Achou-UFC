@@ -10,7 +10,27 @@ function usuarioRoleBadge(role) {
         aluno: { cls: 'text-bg-success', label: 'Aluno' }
     };
     const item = config[role] || { cls: 'text-bg-secondary', label: role || 'Sem perfil' };
-    return `<span class="badge ${item.cls}">${escapeHtml(item.label)}</span>`;
+    const badge = domEl('span', `badge ${item.cls}`);
+    badge.textContent = item.label;
+    return badge;
+}
+
+function renderUsuarioRow(usuario) {
+    const row = document.createElement('tr');
+    const nomeCell = domEl('td', 'ps-3');
+    const nome = document.createElement('strong');
+    const emailCell = document.createElement('td');
+    const roleCell = document.createElement('td');
+    const idCell = domEl('td', 'text-end pe-3 text-muted small');
+
+    nome.textContent = usuario.nome;
+    nomeCell.appendChild(nome);
+    emailCell.textContent = usuario.email;
+    roleCell.appendChild(usuarioRoleBadge(usuario.role));
+    idCell.textContent = `#${usuario.id}`;
+    row.append(nomeCell, emailCell, roleCell, idCell);
+
+    return row;
 }
 
 function renderUsuarios(usuarios) {
@@ -24,22 +44,13 @@ function renderUsuarios(usuarios) {
     if (!usuarios.length) {
         tabela.classList.add('d-none');
         vazio.classList.remove('d-none');
-        tbody.innerHTML = '';
+        tbody.replaceChildren();
         return;
     }
 
     vazio.classList.add('d-none');
     tabela.classList.remove('d-none');
-    tbody.innerHTML = usuarios.map((usuario) => `
-        <tr>
-            <td class="ps-3">
-                <strong>${escapeHtml(usuario.nome)}</strong>
-            </td>
-            <td>${escapeHtml(usuario.email)}</td>
-            <td>${usuarioRoleBadge(usuario.role)}</td>
-            <td class="text-end pe-3 text-muted small">#${escapeHtml(String(usuario.id))}</td>
-        </tr>
-    `).join('');
+    tbody.replaceChildren(...usuarios.map(renderUsuarioRow));
 }
 
 async function carregarUsuarios() {

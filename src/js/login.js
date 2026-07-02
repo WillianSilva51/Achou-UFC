@@ -5,6 +5,11 @@ const erroLogin = document.getElementById('erro');
 const submitLogin = formLogin.querySelector('button[type="submit"]');
 let loginEmAndamento = false;
 
+function setLoginButtonLoading() {
+    const spinner = domEl('span', 'spinner-border spinner-border-sm me-2');
+    submitLogin.replaceChildren(spinner, document.createTextNode('Entrando...'));
+}
+
 formLogin.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -18,7 +23,7 @@ formLogin.addEventListener('submit', async (event) => {
     erroLogin.classList.add('d-none');
     loginEmAndamento = true;
     submitLogin.disabled = true;
-    submitLogin.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Entrando...';
+    setLoginButtonLoading();
 
     try {
         const fd = new FormData(formLogin);
