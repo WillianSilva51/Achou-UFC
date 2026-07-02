@@ -78,13 +78,11 @@ class ItemController
             return;
         }
 
-        $statusRaw = !empty($dados['status'])
-            ? $this->normalizarStatus($dados['status'])
-            : 'disponivel';
+        $statusRaw = trim($dados['status'] ?? 'disponivel');
 
         if (!in_array($statusRaw, self::STATUS_CRIACAO, true)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Status inválido. Use: disponivel ou em_analise.']);
+            echo json_encode(['error' => 'Status inválido ou em maiúsculas. Use estritamente: disponivel ou em_analise.']);
             return;
         }
 
@@ -128,12 +126,23 @@ class ItemController
             $data_encontrado = $data_raw;
         }
 
-        $foto_url = $this->validarFotoUrl($dados['foto_url'] ?? null);
-        if ($foto_url === false) {
-            http_response_code(400);
-            echo json_encode(['error' => 'A URL da foto é inválida ou o domínio não é permitido.']);
-            return;
+        if (!empty($dados['foto_base64'])) {
+            $foto_url = $this->processarFotoBase64($dados['foto_base64']);
+            if ($foto_url === false) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Não foi possível processar a imagem enviada (formato inválido ou maior que 5MB).']);
+                return;
+            }
+        } else {
+            $foto_url = $this->validarFotoUrl($dados['foto_url'] ?? null);
+            if ($foto_url === false) {
+                http_response_code(400);
+                echo json_encode(['error' => 'A URL da foto é inválida ou o domínio não é permitido.']);
+                return;
+            }
         }
+    
+    
 
         $itemModel = new ItemPerdido();
 
@@ -344,11 +353,11 @@ class ItemController
             return;
         }
 
-        if (!empty($dados['status'])) {
-            $statusRaw = $this->normalizarStatus($dados['status']);
+        if (array_key_exists('status', $dados)) {
+            $statusRaw = trim($dados['status']);
             if (!in_array($statusRaw, self::STATUS_VALIDOS, true)) {
                 http_response_code(400);
-                echo json_encode(['error' => 'Status do item inválido. Use: ' . implode(', ', self::STATUS_VALIDOS)]);
+                echo json_encode(['error' => 'Status do item inválido ou em maiúsculas. Use estritamente: ' . implode(', ', self::STATUS_VALIDOS)]);
                 return;
             }
             $status = $statusRaw;
@@ -356,23 +365,28 @@ class ItemController
             $status = $itemAtual['status'];
         }
 
-        if (!empty($dados['data_encontrado'])) {
-            $data_raw = trim($dados['data_encontrado']);
-            $d        = \DateTime::createFromFormat('!Y-m-d', $data_raw);
-            if (!$d || $d->format('Y-m-d') !== $data_raw) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Formato de data inválido. Use AAAA-MM-DD.']);
-                return;
-            }
-            if ($d > new \DateTime('today')) {
-                http_response_code(400);
-                echo json_encode(['error' => 'A data em que o item foi encontrado não pode ser no futuro.']);
-                return;
-            }
-            $data_encontrado = $data_raw;
-        } else {
-            $data_encontrado = $itemAtual['data_encontrado'];
+        $data_raw = trim($dados['data_encontrado'] ?? '');
+        
+        if ($data_raw === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'A data em que o item foi encontrado é obrigatória e não pode ser vazia.']);
+            return;
         }
+
+        $d = \DateTime::createFromFormat('!Y-m-d', $data_raw);
+        if (!$d || $d->format('Y-m-d') !== $data_raw) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Formato de data inválido. Use AAAA-MM-DD.']);
+            return;
+        }
+
+        if ($d > new \DateTime('today')) {
+            http_response_code(400);
+            echo json_encode(['error' => 'A data em que o item foi encontrado não pode ser no futuro.']);
+            return;
+        }
+
+        $data_encontrado = $data_raw;
 
         if (array_key_exists('foto_url', $dados)) {
             if (empty($dados['foto_url'])) {
@@ -531,9 +545,38 @@ class ItemController
         }
 
         if (!$permitido) {
-            return false;
+                return false;
+            }
+            return $url_limpa;
+        }
+        
+        
+        private function processarFotoBase64(string $base64): string|false
+        {
+            if (preg_match('/^data:image\/[a-zA-Z+]+;base64,(.+)$/', $base64, $m)) {
+                $base64 = $m[1];
+            }
+
+            $binario = base64_decode($base64, true);
+            if ($binario === false || strlen($binario) > 5 * 1024 * 1024) {
+                return false; // inválido ou acima de 5MB
+            }
+
+            $mimeReal   = (new \finfo(FILEINFO_MIME_TYPE))->buffer($binario);
+            $permitidos = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+
+            if (!isset($permitidos[$mimeReal])) {
+                return false;
+            }
+
+            $nomeFinal = 'item_' . bin2hex(random_bytes(8)) . '.' . $permitidos[$mimeReal];
+
+            try {
+               return \Core\SupabaseStorage::upload($binario, $nomeFinal, $mimeReal);
+           } catch (\RuntimeException $e) {
+               error_log('ItemController::processarFotoBase64 — ' . $e->getMessage());
+               return false;
+           }
         }
 
-        return $url_limpa;
     }
-}

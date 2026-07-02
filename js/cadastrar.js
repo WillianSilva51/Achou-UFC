@@ -2,12 +2,21 @@ const selCat = document.getElementById('sel-cat');
 const selLoc = document.getElementById('sel-loc');
 const dataEncontrado = document.querySelector('input[name=data_encontrado]');
 const formItem = document.getElementById('form-item');
+const fotoArquivo = fd.get('foto_arquivo');  1
 const submitItem = formItem.querySelector('button[type="submit"]');
 let cadastroEmAndamento = false;
 
 dataEncontrado.value = new Date().toISOString().slice(0, 10);
 dataEncontrado.max = dataEncontrado.value;
 
+function fileParaBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
 async function carregarCombos() {
     try {
         const [categorias, locais] = await Promise.all([
@@ -46,7 +55,15 @@ formItem.addEventListener('submit', async function (event) {
         status: 'disponivel'
     };
 
-    if (fotoUrl) {
+    if (fotoArquivo && fotoArquivo.size > 0) {
+        const tiposOk = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!tiposOk.includes(fotoArquivo.type) || fotoArquivo.size > 5 * 1024 * 1024) {
+            ok.className = 'alert alert-danger mt-3';
+            ok.textContent = 'A foto deve ser JPEG, PNG ou WEBP e ter no máximo 5MB.';
+            return;
+        }
+        payload.foto_base64 = await fileParaBase64(fotoArquivo);
+    } else if (fotoUrl) {
         if (!safeImageUrl(fotoUrl)) {
             ok.className = 'alert alert-danger mt-3';
             ok.textContent = 'Informe uma URL de foto http(s) válida.';
