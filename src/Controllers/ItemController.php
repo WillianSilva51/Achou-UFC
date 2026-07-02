@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Core\Request;
+use Core\SupabaseStorage;
 use Middlewares\AuthMiddleware;
 use Exception;
 use Models\ItemPerdido;
@@ -13,6 +14,13 @@ class ItemController
 {
     private const STATUS_VALIDOS = ['disponivel', 'devolvido', 'arquivado', 'em_analise'];
     private const STATUS_CRIACAO = ['disponivel', 'em_analise'];
+    private const FOTO_MAX_BYTES = 5242880;
+    private const FOTO_MAX_DIMENSION = 8000;
+    private const FOTO_MIMES_PERMITIDOS = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
     private const FOTO_DOMINIOS_PERMITIDOS = [
         'images.unsplash.com',
         'plus.unsplash.com',
@@ -46,6 +54,12 @@ class ItemController
                 echo json_encode(['error' => "O campo '{$campo}' deve ser uma string."]);
                 return;
             }
+        }
+
+        if (array_key_exists('foto_base64', $dados) && !is_array($dados['foto_base64'])) {
+            http_response_code(400);
+            echo json_encode(['error' => "O campo 'foto_base64' deve ser um objeto."]);
+            return;
         }
 
         $camposInt = ['categoria_id', 'local_id'];
@@ -128,16 +142,11 @@ class ItemController
             $data_encontrado = $data_raw;
         }
 
-        $foto_url = $this->validarFotoUrl($dados['foto_url'] ?? null);
-        if ($foto_url === false) {
-            http_response_code(400);
-            echo json_encode(['error' => 'A URL da foto é inválida ou o domínio não é permitido.']);
-            return;
-        }
-
         $itemModel = new ItemPerdido();
 
         try {
+            $foto_url = $this->resolverFotoUrl($dados);
+
             if ($itemModel->findActiveDuplicate(
                 $titulo,
                 $descricao,
@@ -164,6 +173,13 @@ class ItemController
 
             http_response_code(201);
             echo json_encode(['sucesso' => true, 'mensagem' => 'Item registrado com sucesso.', 'id' => $id]);
+        } catch (\InvalidArgumentException $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        } catch (\RuntimeException $e) {
+            error_log('Erro de storage ao criar item: ' . $e->getMessage());
+            http_response_code(502);
+            echo json_encode(['error' => $e->getMessage()]);
         } catch (Exception $e) {
             error_log('Erro ao criar item: ' . $e->getMessage());
             http_response_code(500);
@@ -282,6 +298,12 @@ class ItemController
             }
         }
 
+        if (array_key_exists('foto_base64', $dados) && !is_array($dados['foto_base64'])) {
+            http_response_code(400);
+            echo json_encode(['error' => "O campo 'foto_base64' deve ser um objeto."]);
+            return;
+        }
+
         $camposInt = ['categoria_id', 'local_id'];
         foreach ($camposInt as $campo) {
             if (isset($dados[$campo]) && !is_numeric($dados[$campo])) {
@@ -374,22 +396,17 @@ class ItemController
             $data_encontrado = $itemAtual['data_encontrado'];
         }
 
-        if (array_key_exists('foto_url', $dados)) {
-            if (empty($dados['foto_url'])) {
-                $foto_url = null; 
-            } else {
-                $foto_url = $this->validarFotoUrl($dados['foto_url']);
-                if ($foto_url === false) {
-                    http_response_code(400);
-                    echo json_encode(['error' => 'A URL da foto é inválida ou o domínio não é permitido.']);
-                    return;
-                }
-            }
-        } else {
-            $foto_url = $itemAtual['foto_url'];
-        }
-
         try {
+            if (array_key_exists('foto_base64', $dados) || array_key_exists('foto_url', $dados)) {
+                if (array_key_exists('foto_url', $dados) && empty($dados['foto_url']) && !array_key_exists('foto_base64', $dados)) {
+                    $foto_url = null;
+                } else {
+                    $foto_url = $this->resolverFotoUrl($dados);
+                }
+            } else {
+                $foto_url = $itemAtual['foto_url'];
+            }
+
             if ($itemModel->findActiveDuplicate(
                 $titulo,
                 $descricao,
@@ -417,6 +434,13 @@ class ItemController
 
             http_response_code(200);
             echo json_encode(['sucesso' => true, 'mensagem' => 'Item atualizado com sucesso.']);
+        } catch (\InvalidArgumentException $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        } catch (\RuntimeException $e) {
+            error_log('Erro de storage ao atualizar item: ' . $e->getMessage());
+            http_response_code(502);
+            echo json_encode(['error' => $e->getMessage()]);
         } catch (Exception $e) {
             error_log('Erro ao atualizar item: ' . $e->getMessage());
             http_response_code(500);
@@ -535,5 +559,72 @@ class ItemController
         }
 
         return $url_limpa;
+    }
+
+    private function resolverFotoUrl(array $dados): ?string
+    {
+        $temArquivo = array_key_exists('foto_base64', $dados) && is_array($dados['foto_base64']);
+        $temUrl = isset($dados['foto_url']) && trim((string) $dados['foto_url']) !== '';
+
+        if ($temArquivo && $temUrl) {
+            throw new \InvalidArgumentException('Envie uma foto por arquivo ou por URL, não os dois.');
+        }
+
+        if ($temArquivo) {
+            return $this->salvarFotoBase64($dados['foto_base64']);
+        }
+
+        $fotoUrl = $this->validarFotoUrl($dados['foto_url'] ?? null);
+        if ($fotoUrl === false) {
+            throw new \InvalidArgumentException('A URL da foto é inválida ou o domínio não é permitido.');
+        }
+
+        return $fotoUrl;
+    }
+
+    private function salvarFotoBase64(array $foto): string
+    {
+        $conteudo = $foto['conteudo'] ?? '';
+        if (!is_string($conteudo) || trim($conteudo) === '') {
+            throw new \InvalidArgumentException('Arquivo de foto inválido.');
+        }
+
+        if (preg_match('/^data:(?<mime>[-\w.]+\/[-\w.+]+);base64,(?<data>.+)$/s', $conteudo, $matches)) {
+            $conteudo = $matches['data'];
+        }
+
+        $conteudo = preg_replace('/\s+/', '', $conteudo) ?? '';
+        if ($conteudo === '' || strlen($conteudo) > (int) ceil(self::FOTO_MAX_BYTES * 1.37)) {
+            throw new \InvalidArgumentException('A foto deve ter no máximo 5MB.');
+        }
+
+        $binario = base64_decode($conteudo, true);
+        if ($binario === false) {
+            throw new \InvalidArgumentException('Arquivo de foto inválido.');
+        }
+
+        if (strlen($binario) > self::FOTO_MAX_BYTES) {
+            throw new \InvalidArgumentException('A foto deve ter no máximo 5MB.');
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeReal = $finfo->buffer($binario) ?: '';
+        if (!array_key_exists($mimeReal, self::FOTO_MIMES_PERMITIDOS)) {
+            throw new \InvalidArgumentException('Formato de foto inválido. Use PNG, JPEG ou WebP.');
+        }
+
+        $dimensoes = @getimagesizefromstring($binario);
+        if ($dimensoes === false || empty($dimensoes['mime']) || $dimensoes['mime'] !== $mimeReal) {
+            throw new \InvalidArgumentException('Arquivo de foto inválido.');
+        }
+
+        if ($dimensoes[0] < 1 || $dimensoes[1] < 1 || $dimensoes[0] > self::FOTO_MAX_DIMENSION || $dimensoes[1] > self::FOTO_MAX_DIMENSION) {
+            throw new \InvalidArgumentException('Dimensões da foto inválidas.');
+        }
+
+        $extensao = self::FOTO_MIMES_PERMITIDOS[$mimeReal];
+        $nomeArquivo = bin2hex(random_bytes(16)) . '.' . $extensao;
+
+        return SupabaseStorage::upload($binario, $nomeArquivo, $mimeReal);
     }
 }

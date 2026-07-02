@@ -10,6 +10,34 @@ const verificacaoEmail = document.getElementById('verificacao-email');
 const codigoVerificacao = document.getElementById('codigo-verificacao');
 const reenviarCodigo = document.getElementById('reenviar-codigo');
 const alertaRegistro = document.getElementById('registro-alerta');
+const submitRegister = formRegister.querySelector('button[type="submit"]');
+const submitVerificacao = formVerificacao.querySelector('button[type="submit"]');
+const reenviarCodigoTextoOriginal = reenviarCodigo.textContent;
+let registroEmAndamento = false;
+let verificacaoEmAndamento = false;
+
+function setButtonLoading(button, loadingText) {
+    if (!button) return;
+
+    if (!button.dataset.originalHtml) {
+        button.dataset.originalHtml = button.innerHTML;
+    }
+
+    button.disabled = true;
+    button.replaceChildren(
+        domEl('span', 'spinner-border spinner-border-sm me-2', { role: 'status', 'aria-hidden': 'true' }),
+        document.createTextNode(loadingText)
+    );
+}
+
+function resetButton(button) {
+    if (!button) return;
+
+    button.disabled = false;
+    if (button.dataset.originalHtml) {
+        button.innerHTML = button.dataset.originalHtml;
+    }
+}
 
 function atualizarIdentificador() {
     identificadorLabel.textContent = 'Matrícula';
@@ -30,6 +58,8 @@ confirmPasswordInput.addEventListener('input', validarConfirmacaoSenha);
 
 formRegister.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (registroEmAndamento) return;
+
     validarConfirmacaoSenha();
 
     if (!formRegister.checkValidity()) {
@@ -38,6 +68,14 @@ formRegister.addEventListener('submit', async (event) => {
     }
 
     alertaRegistro.className = 'alert d-none small py-2';
+
+    registroEmAndamento = true;
+    setButtonLoading(submitRegister, 'Enviando codigo...');
+    alertaRegistro.className = 'alert alert-info small py-2';
+    alertaRegistro.replaceChildren(
+        domEl('span', 'spinner-border spinner-border-sm me-2', { role: 'status', 'aria-hidden': 'true' }),
+        document.createTextNode('Enviando codigo de ativacao para seu email...')
+    );
 
     try {
         const fd = new FormData(formRegister);
@@ -62,18 +100,28 @@ formRegister.addEventListener('submit', async (event) => {
     } catch (error) {
         alertaRegistro.textContent = error.message;
         alertaRegistro.className = 'alert alert-danger small py-2';
+    } finally {
+        registroEmAndamento = false;
+        resetButton(submitRegister);
     }
 });
 
 formVerificacao.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (verificacaoEmAndamento) return;
 
     if (!formVerificacao.checkValidity()) {
         formVerificacao.classList.add('was-validated');
         return;
     }
 
-    alertaRegistro.className = 'alert d-none small py-2';
+    verificacaoEmAndamento = true;
+    setButtonLoading(submitVerificacao, 'Verificando...');
+    alertaRegistro.className = 'alert alert-info small py-2';
+    alertaRegistro.replaceChildren(
+        domEl('span', 'spinner-border spinner-border-sm me-2', { role: 'status', 'aria-hidden': 'true' }),
+        document.createTextNode('Verificando codigo...')
+    );
 
     try {
         await AchouApi.verifyEmail({
@@ -88,6 +136,9 @@ formVerificacao.addEventListener('submit', async (event) => {
     } catch (error) {
         alertaRegistro.textContent = error.message;
         alertaRegistro.className = 'alert alert-danger small py-2';
+    } finally {
+        verificacaoEmAndamento = false;
+        resetButton(submitVerificacao);
     }
 });
 
@@ -95,6 +146,10 @@ reenviarCodigo.addEventListener('click', async () => {
     if (!verificacaoEmail.value) return;
 
     reenviarCodigo.disabled = true;
+    reenviarCodigo.replaceChildren(
+        domEl('span', 'spinner-border spinner-border-sm me-2', { role: 'status', 'aria-hidden': 'true' }),
+        document.createTextNode('Enviando...')
+    );
     try {
         const response = await AchouApi.resendVerification(verificacaoEmail.value);
         alertaRegistro.textContent = response.mensagem || 'Novo código enviado para seu email institucional.';
@@ -104,5 +159,6 @@ reenviarCodigo.addEventListener('click', async () => {
         alertaRegistro.className = 'alert alert-danger small py-2';
     } finally {
         reenviarCodigo.disabled = false;
+        reenviarCodigo.textContent = reenviarCodigoTextoOriginal;
     }
 });

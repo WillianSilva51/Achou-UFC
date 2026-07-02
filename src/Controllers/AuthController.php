@@ -91,6 +91,9 @@ class AuthController
             echo json_encode(['error' => 'Formato de email inválido.']);
             return;
         }
+        $email = strtolower($email);
+
+        RateLimiter::check($this->rateLimitKey($email), 'register', 5, 300);
 
         $nome  = htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8');
         $senha = $dados['senha'];
@@ -115,11 +118,28 @@ class AuthController
         try {
             $pdo->beginTransaction();
 
-            $usuarioId = $usuarioModel->create($nome, $email, $senha, $role);
+            $usuarioExistente = $usuarioModel->findByEmail($email);
+            if ($usuarioExistente && !empty($usuarioExistente['email_verificado_em'])) {
+                throw new \DomainException('Este e-mail já está em uso por uma conta ativa.');
+            }
 
-            if ($role === 'aluno') {
-                $alunoModel = new \Models\Aluno();
-                $alunoModel->create($usuarioId, $matricula);
+            if ($matricula !== null && $usuarioModel->matriculaEmUsoPorContaVerificada($matricula)) {
+                throw new \DomainException('Esta matrícula já está em uso por uma conta ativa.');
+            }
+
+            $usuarioId = $usuarioExistente ? (int) $usuarioExistente['id'] : null;
+            if ($matricula !== null) {
+                $usuarioModel->removerContasNaoVerificadasPorMatricula($matricula, $usuarioId);
+            }
+
+            if ($usuarioId !== null) {
+                $usuarioModel->updatePendingRegistration($usuarioId, $nome, $email, $senha);
+            } else {
+                $usuarioId = $usuarioModel->create($nome, $email, $senha, $role);
+            }
+
+            if ($role === 'aluno' && $matricula !== null) {
+                $usuarioModel->upsertAlunoMatricula($usuarioId, $matricula);
             }
 
             $codigo = $usuarioModel->gerarCodigoVerificacao($usuarioId);
@@ -128,7 +148,6 @@ class AuthController
             }
 
             $pdo->commit();
-
 
             http_response_code(201);
             echo json_encode([
@@ -139,6 +158,12 @@ class AuthController
                 'email' => $email,
             ]);
 
+        } catch (\DomainException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            http_response_code(409);
+            echo json_encode(['error' => $e->getMessage()]);
         } catch (\PDOException $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -156,7 +181,7 @@ class AuthController
                 $pdo->rollBack();
             }
             error_log('Erro no registro de usuário: ' . $e->getMessage());
-            http_response_code(400);
+            http_response_code(str_contains($e->getMessage(), 'já estão em uso') ? 409 : 400);
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
@@ -327,7 +352,6 @@ class AuthController
 
         $usuarioModel = new Usuario();
         $user = $usuarioModel->findByEmail($email);
-
         if (!$user || !empty($user['email_verificado_em'])) {
             http_response_code(200);
             echo json_encode(['sucesso' => true, 'mensagem' => 'Se a conta precisar de ativação, um novo código será enviado.']);

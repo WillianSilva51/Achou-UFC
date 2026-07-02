@@ -56,6 +56,10 @@ class ReivindicacaoController
             http_response_code(400);
             echo json_encode(['error' => $e->getMessage()]);
 
+        } catch (\DomainException $e) {
+            http_response_code(409);
+            echo json_encode(['error' => $e->getMessage()]);
+
         } catch (\Exception $e) {
             error_log('Erro interno (Reivindicação store): ' . $e->getMessage());
             http_response_code(500);
