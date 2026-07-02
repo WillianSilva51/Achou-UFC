@@ -1,7 +1,9 @@
 RewriteEngine On
 
-# Bloqueia pastas internas: código-fonte, dependências, docs, seeds do banco, git, IDE
-RewriteRule ^(src|vendor|docs|docker|\.git|\.idea|\.venv)(/|$) - [F,L]
+# Bloqueia pastas internas do backend e libera assets públicos em src/js e src/components
+RewriteRule ^src/?$ - [F,L]
+RewriteRule ^src/(Controllers|Core|Entity|Middlewares|Models)(/|$) - [F,L]
+RewriteRule ^(vendor|docs|docker|\.git|\.idea|\.venv)(/|$) - [F,L]
 
 # Bloqueia arquivos de configuração/metadados sensíveis
 RewriteRule ^(composer\.(json|lock)|Dockerfile|docker-compose\.yml|README\.md|LICENSE|\.env(\.example)?|\.gitignore|\.php-cs-fixer.*)$ - [F,L]

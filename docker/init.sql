@@ -95,7 +95,6 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 INSERT INTO usuario (id, nome, email, senha, role) VALUES
     (1, 'Administrador Local',  'admin@ufc.br',       crypt('Admin@123', gen_salt('bf', 12)), 'admin'),
-    (5, 'Administrador Local',  'admin2@ufc.br',      crypt('Admin@123', gen_salt('bf', 12)), 'admin'),
     (2, 'Aluno Teste',          'aluno@alu.ufc.br',   crypt('Aluno@123', gen_salt('bf', 12)), 'aluno'),
     (3, 'Maria Silva',          'maria@alu.ufc.br',   crypt('Aluno@123', gen_salt('bf', 12)), 'aluno'),
     (4, 'Joao Ferreira',        'joao@alu.ufc.br',    crypt('Aluno@123', gen_salt('bf', 12)), 'aluno')

@@ -3,7 +3,6 @@ FROM php:8.2-apache
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq-dev \
         libonig-dev \
-        libcurl4-openssl-dev \
         curl \
         unzip \
         git \
@@ -11,7 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pdo \
         pdo_pgsql \
         mbstring \
-        curl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -24,9 +22,6 @@ RUN printf '%s\n' \
         'log_errors=On' \
         'error_reporting=E_ALL' \
         > /usr/local/etc/php/conf.d/achou-ufc.ini
-
-RUN echo "expose_php = Off" > /usr/local/etc/php/conf.d/hide-php.ini
-RUN echo "ServerTokens Prod\nServerSignature Off" >> /etc/apache2/apache2.conf
 
 RUN printf '%s\n' \
         '<Directory /var/www/html>' \
