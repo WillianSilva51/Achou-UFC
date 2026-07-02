@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Minhas Reivindicações — Achou! UFC Quixadá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/components/footer.css">
+    <link rel="stylesheet" href="css/components/pages.css">
+    <link rel="stylesheet" href="css/sections/nav.css">
+</head>
+
+<body class="page-shell">
+    <!-- app.js carregado primeiro para requireAuth funcionar imediatamente -->
+    <script src="js/app.js?v=docker-api-20260701"></script>
+    <script src="js/guard-auth.js?v=docker-api-20260701"></script>
+    <!-- requireAuth() sem parâmetro de role: qualquer usuário logado passa.
+         O JS vai filtrar por aluno_id do próprio token — admin não tem reivindicações
+         mas não precisa bloquear a página para ele. -->
+
+    <!-- ── Navbar ── -->
+    <nav class="navbar navbar-dark navbar-expand-lg navbar-ufc">
+        <div class="container">
+            <a href="auth_hub.html" class="navbar-brand d-flex align-items-center gap-2">
+                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" class="brand-logo" alt="Logo da UFC">
+                <span class="brand-title">Achou! <span class="accent">UFC</span></span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+                aria-controls="nav" aria-label="Abrir menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav ms-auto gap-2">
+                    <li class="nav-item">
+                        <a href="vitrine.html" class="nav-link">
+                            <i class="bi bi-grid-3x3-gap"></i> Vitrine
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="minhas_reivindicacoes.html" class="nav-link active">
+                            <i class="bi bi-list-check"></i> Minhas Reivindicações
+                        </a>
+                    </li>
+                    <li class="nav-item nav-auth-item">
+                        <a href="auth_hub.html" class="nav-link nav-link-login">
+                            <i class="bi bi-shield-lock"></i> Login
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── Cabeçalho de página ── -->
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="bi bi-list-check me-2"></i>Minhas Reivindicações</h1>
+            <p>Acompanhe o status de todas as suas solicitações de itens encontrados.</p>
+        </div>
+    </div>
+
+    <main class="container py-4">
+
+        <!-- Bloco de instrução de retirada — visível só quando há pelo menos 1 aprovada -->
+        <div class="retirada-card p-3 mb-4 d-none" id="bloco-retirada">
+            <div class="d-flex align-items-start gap-3">
+                <div class="retirada-icon"><i class="bi bi-check-circle-fill"></i></div>
+                <div>
+                    <h6 class="fw-bold text-success mb-1">
+                        <i class="bi bi-check2-circle"></i> Você tem uma reivindicação aprovada!
+                    </h6>
+                    <p class="mb-1 small">
+                        Compareça à <strong>Recepção do Campus UFC Quixadá</strong> no horário de
+                        funcionamento portando um <strong>documento com foto</strong> (carteira de estudante,
+                        RG ou CNH).
+                    </p>
+                    <p class="mb-0 small text-muted">
+                        Informe ao atendente seu nome completo e o número da reivindicação destacado
+                        na tabela abaixo <span class="badge badge-aprovado">Aprovado</span>.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="text-center py-5" id="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="text-muted mt-2 small">Buscando suas reivindicações...</p>
+        </div>
+
+        <!-- Erro de API -->
+        <div class="alert alert-danger d-none" id="bloco-erro" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span id="texto-erro">Erro ao carregar reivindicações.</span>
+        </div>
+
+        <!-- Empty state -->
+        <div class="content-card d-none" id="bloco-vazio">
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                <h5 class="fw-bold">Você ainda não fez nenhuma reivindicação</h5>
+                <p class="text-muted">Quando encontrar seu objeto na vitrine, clique em "Reivindicar" para solicitar a retirada.</p>
+                <a href="vitrine.html" class="btn btn-ufc mt-2">
+                    <i class="bi bi-search me-1"></i> Buscar meu objeto na vitrine
+                </a>
+            </div>
+        </div>
+
+        <!-- Tabela de reivindicações -->
+        <div class="content-card d-none" id="bloco-tabela">
+            <div class="card-body p-0">
+                <div class="p-3 pb-0 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-hand-index-thumb text-primary me-1"></i>
+                        Histórico de solicitações
+                        <span class="badge text-bg-secondary ms-2" id="contador-reivs">0</span>
+                    </h6>
+                    <a href="vitrine.html" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-circle me-1"></i> Nova reivindicação
+                    </a>
+                </div>
+
+                <div class="table-responsive mt-3">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">#</th>
+                                <th>Item</th>
+                                <th>Local</th>
+                                <th>Data da solicitação</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-reivs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── Footer ── -->
+    <footer class="footer mt-auto">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <figure class="d-flex align-items-center gap-2 mb-0">
+                <img src="assets/images/brasao1_horizontal_cor_72dpi.png" alt="Logo da UFC">
+                <figcaption>Setor de Recepção e Vigilância — Campus Quixadá</figcaption>
+            </figure>
+            <small>&copy; 2026 Achou! UFC · Projeto de Extensão Universitária</small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+    <script src="js/minhas-reivindicacoes.js?v=docker-api-20260701"></script>
+</body>
+
+</html>

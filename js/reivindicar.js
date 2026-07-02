@@ -6,20 +6,20 @@ async function initReivindicacao() {
     if (!requireAuth('aluno')) return;
 
     await Promise.all([
-        mockApi.listarCategorias(),
-        mockApi.listarLocais()
+        AchouApi.listarCategorias(),
+        AchouApi.listarLocais()
     ]);
 
     let item;
     try {
-        item = await mockApi.buscarItem(itemId);
+        item = await AchouApi.buscarItem(itemId);
     } catch (error) {
-        wrap.innerHTML = `<div class="col-12"><div class="alert alert-warning">${escapeHtml(error.message)} <a href="index.html">Voltar</a>.</div></div>`;
+        wrap.innerHTML = `<div class="col-12"><div class="alert alert-warning">${escapeHtml(error.message)} <a href="vitrine.html">Voltar</a>.</div></div>`;
         return;
     }
 
     if (!item) {
-        wrap.innerHTML = `<div class="col-12"><div class="alert alert-warning">Item não encontrado. <a href="index.html">Voltar</a>.</div></div>`;
+        wrap.innerHTML = `<div class="col-12"><div class="alert alert-warning">Item não encontrado. <a href="vitrine.html">Voltar</a>.</div></div>`;
         return;
     }
 
@@ -92,7 +92,7 @@ async function initReivindicacao() {
               </div>
               <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-ufc"><i class="bi bi-send"></i> Enviar reivindicação</button>
-                <a href="index.html" class="btn btn-outline-secondary">Cancelar</a>
+                <a href="vitrine.html" class="btn btn-outline-secondary">Cancelar</a>
               </div>
             </form>
 
@@ -109,7 +109,7 @@ async function initReivindicacao() {
         if (!this.checkValidity()) { this.classList.add('was-validated'); return; }
         let novo;
         try {
-            novo = await mockApi.criarReivindicacao({ item_id: item.id });
+            novo = await AchouApi.criarReivindicacao({ item_id: item.id });
         } catch (error) {
             const s = document.getElementById('sucesso');
             s.className = 'alert alert-danger mt-3';

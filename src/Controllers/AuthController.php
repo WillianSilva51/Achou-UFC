@@ -55,8 +55,13 @@ class AuthController
             return;
         }
 
+        if ($role === 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Cadastro público de administradores não é permitido.']);
+            return;
+        }
+
         $matricula = null;
-        $siap = null;
 
         if ($role === 'aluno') {
             if (empty($dados['matricula'])) {
@@ -68,19 +73,6 @@ class AuthController
             if (!preg_match('/^\d{6,12}$/', $matricula)) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Formato de matrícula inválido. Use apenas números (6 a 12 dígitos).']);
-                return;
-            }
-        } elseif ($role === 'admin') {
-            $rawSiap = $dados['siap'] ?? $dados['siape'] ?? ''; // plmds ne? resolver isso aqui calebe
-            if (empty($rawSiap)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'O SIAP/SIAPE é obrigatório para administradores.']);
-                return;
-            }
-            $siap = trim(preg_replace('/\s+/', '', $rawSiap));
-            if (!preg_match('/^\d{6,9}$/', $siap)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Formato de SIAP inválido. Use apenas números (6 a 9 dígitos).']);
                 return;
             }
         }
@@ -107,6 +99,14 @@ class AuthController
             return;
         }
 
+        $dominio_valido = preg_match('/^[a-zA-Z0-9._%+-]+@(alu\.)?ufc\.br$/', $email);
+
+        if (!$dominio_valido) {
+            http_response_code(400); 
+            echo json_encode(['error' => 'Apenas e-mails institucionais (@ufc.br ou @alu.ufc.br) são permitidos.']);
+            return;
+        }
+
         $usuarioModel = new \Models\Usuario();
         $pdo = \Core\Database::getConnection();
 
@@ -118,9 +118,6 @@ class AuthController
             if ($role === 'aluno') {
                 $alunoModel = new \Models\Aluno();
                 $alunoModel->create($usuarioId, $matricula);
-            } elseif ($role === 'admin') {
-                $adminModel = new \Models\Administracao();
-                $adminModel->create($usuarioId, (int)$siap);
             }
 
             $pdo->commit();

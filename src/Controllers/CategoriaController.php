@@ -25,7 +25,7 @@ class CategoriaController
 
         $dados = $request->getBody();
 
-        $nome = !empty($dados['nome']) ? htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8') : '';
+        $nome = $this->sanitizarNome($dados['nome'] ?? null);
         
         if (empty($nome)) {
             http_response_code(400);
@@ -38,6 +38,12 @@ class CategoriaController
         $categoriaModel = new Categoria();
 
         try {
+            if ($categoriaModel->existsByNormalizedName($nome)) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe uma categoria cadastrada com este nome.']);
+                return;
+            }
+
             $id_categoria = $categoriaModel->create($nome);
             http_response_code(201);
             echo json_encode([
@@ -122,7 +128,7 @@ class CategoriaController
 
         $dados = $request->getBody();
 
-        $nome = !empty($dados['nome']) ? htmlspecialchars(strip_tags(trim($dados['nome'])), ENT_QUOTES, 'UTF-8') : '';
+        $nome = $this->sanitizarNome($dados['nome'] ?? null);
 
         if (empty($nome)) {
             http_response_code(400);
@@ -134,22 +140,20 @@ class CategoriaController
 
         try {
             if (!$categoriaModel->findById($id)) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Categoria não encontrada.']);
-            return;
-        }
+                http_response_code(404);
+                echo json_encode(['error' => 'Categoria não encontrada.']);
+                return;
+            }
 
-            $sucesso = $categoriaModel->update($id, $nome);
+            if ($categoriaModel->existsByNormalizedName($nome, $id)) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe outra categoria com este nome.']);
+                return;
+            }
+
+            $categoriaModel->update($id, $nome);
             http_response_code(200);
             echo json_encode(['sucesso' => true, 'mensagem' => 'Categoria atualizada com sucesso.']);
-
-
-            /*if ($sucesso) {
-                http_response_code(200);
-                echo json_encode(['sucesso' => true, 'mensagem' => 'Categoria atualizada com sucesso.']);
-            } else {
-                throw new Exception("Falha ao atualizar ou nenhuma alteração foi feita.");
-            }*/
         } catch (\PDOException $e) {
             if ($e->getCode() == 23505 || strpos($e->getMessage(), 'uq_categoria_nome') !== false) {
                 http_response_code(409);
@@ -189,9 +193,34 @@ class CategoriaController
 
             http_response_code(200);
             echo json_encode(['sucesso' => true, 'message' => 'Categoria deletada com sucesso']);
+        } catch (\PDOException $e) {
+            if ($e->getCode() == 23503) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Categoria em uso por itens cadastrados. Edite ou arquive esses itens antes de excluir.']);
+                return;
+            }
+
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno ao deletar a categoria']);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao deletar a categoria']);
         }
+    }
+
+    private function sanitizarNome(mixed $valor): string
+    {
+        if (!is_string($valor)) {
+            return '';
+        }
+
+        $nome = preg_replace('/\s+/u', ' ', trim(strip_tags($valor))) ?? '';
+        $nome = htmlspecialchars($nome, ENT_QUOTES, 'UTF-8');
+
+        if (mb_strlen($nome) > 120) {
+            return '';
+        }
+
+        return $nome;
     }
 }

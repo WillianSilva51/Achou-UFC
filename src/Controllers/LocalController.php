@@ -22,13 +22,8 @@ class LocalController
         }
         $dados = $request->getBody();
 
-        $nome_local = !empty($dados['nome_local']) 
-            ? htmlspecialchars(strip_tags(trim($dados['nome_local'])), ENT_QUOTES, 'UTF-8') 
-            : '';
-        
-        $descricao = !empty($dados['descricao']) 
-            ? htmlspecialchars(strip_tags(trim($dados['descricao'])), ENT_QUOTES, 'UTF-8') 
-            : '';
+        $nome_local = $this->sanitizarTexto($dados['nome_local'] ?? null, 150);
+        $descricao = $this->sanitizarTexto($dados['descricao'] ?? '', 500);
 
         if (empty($nome_local)) {
             http_response_code(400);
@@ -39,6 +34,12 @@ class LocalController
         $localModel = new Local();
 
         try {
+            if ($localModel->existsByNormalizedName($nome_local)) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe um local cadastrado com este nome.']);
+                return;
+            }
+
             $id_local = $localModel->create($nome_local, $descricao);
             
             http_response_code(201);
@@ -126,8 +127,8 @@ class LocalController
 
         $dados = $request->getBody();
 
-        $nome_local = !empty($dados['nome_local']) ? htmlspecialchars(strip_tags(trim($dados['nome_local'])), ENT_QUOTES, 'UTF-8') : '';
-        $descricao  = !empty($dados['descricao']) ? htmlspecialchars(strip_tags($dados['descricao']), ENT_QUOTES, 'UTF-8') : '';
+        $nome_local = $this->sanitizarTexto($dados['nome_local'] ?? null, 150);
+        $descricao  = $this->sanitizarTexto($dados['descricao'] ?? '', 500);
 
         if (empty($nome_local)) {
             http_response_code(400);
@@ -148,12 +149,16 @@ class LocalController
             }
 
 
-            $sucesso = $localModel->update($id, $nome_local, $descricao);
-            //if($sucesso){
-                http_response_code(200);
-                echo json_encode(['sucesso' => true, 'mensagem' => 'Local atualizado com sucesso.']);
-                return;      
-            //}     
+            if ($localModel->existsByNormalizedName($nome_local, $id)) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Já existe outro local cadastrado com este nome.']);
+                return;
+            }
+
+            $localModel->update($id, $nome_local, $descricao);
+            http_response_code(200);
+            echo json_encode(['sucesso' => true, 'mensagem' => 'Local atualizado com sucesso.']);
+            return;      
 
             
         } catch (\PDOException $e) {
@@ -199,5 +204,21 @@ class LocalController
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao deletar o local']);
         }
+    }
+
+    private function sanitizarTexto(mixed $valor, int $limite): string
+    {
+        if (!is_string($valor)) {
+            return '';
+        }
+
+        $texto = preg_replace('/\s+/u', ' ', trim(strip_tags($valor))) ?? '';
+        $texto = htmlspecialchars($texto, ENT_QUOTES, 'UTF-8');
+
+        if (mb_strlen($texto) > $limite) {
+            return '';
+        }
+
+        return $texto;
     }
 }

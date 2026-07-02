@@ -1,0 +1,239 @@
+.auth-page {
+  background: var(--ufc-blue-dark);
+}
+
+.auth-hub-page {
+  background: linear-gradient(135deg, var(--ufc-blue) 0%, var(--ufc-blue-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.hub-wrapper {
+  width: 100%;
+  max-width: 860px;
+}
+
+.hub-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0, 29, 61, 0.32);
+  overflow: hidden;
+}
+
+.hub-brand {
+  background: var(--ufc-blue);
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  border-right: 4px solid var(--ufc-gold);
+}
+
+.hub-brand img {
+  width: 90px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.hub-brand-title {
+  color: #fff;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.hub-brand-title span {
+  color: var(--ufc-gold);
+}
+
+.hub-brand-sub,
+.hub-brand-copy {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.88rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.hub-brand-copy {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.hub-badge {
+  background: var(--ufc-gold);
+  border-radius: 100px;
+  color: #222;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 0.3rem 0.8rem;
+}
+
+.hub-actions {
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.hub-actions h2 {
+  color: var(--ufc-blue);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.hub-actions p {
+  color: #6c757d;
+  font-size: 0.88rem;
+  margin-bottom: 1.25rem;
+}
+
+.btn-hub-primary,
+.btn-hub-secondary {
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 1rem 1.5rem;
+  text-align: left;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.btn-hub-primary {
+  background: var(--ufc-blue);
+  border: none;
+  color: #fff;
+}
+
+.btn-hub-primary:hover {
+  background: var(--ufc-blue-dark);
+  box-shadow: 0 8px 20px rgba(0, 59, 113, 0.28);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.btn-hub-secondary {
+  background: #f0f4f9;
+  border: 2px solid #dce4ee;
+  color: var(--ufc-blue);
+}
+
+.btn-hub-secondary:hover {
+  background: #e2eaf5;
+  border-color: var(--ufc-blue);
+  color: var(--ufc-blue);
+  transform: translateY(-2px);
+}
+
+.btn-hub-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.3rem;
+}
+
+.btn-hub-primary .btn-hub-icon {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-hub-secondary .btn-hub-icon {
+  background: var(--ufc-blue);
+  color: #fff;
+}
+
+.btn-hub-text small {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 400;
+  margin-top: 1px;
+  opacity: 0.7;
+}
+
+.hub-divider {
+  color: #adb5bd;
+  font-size: 0.78rem;
+  position: relative;
+  text-align: center;
+}
+
+.hub-divider::before,
+.hub-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #dee2e6;
+}
+
+.hub-divider::before {
+  left: 0;
+}
+
+.hub-divider::after {
+  right: 0;
+}
+
+.hub-public-link {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.hub-public-link a {
+  color: #6c757d;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.hub-public-link a:hover {
+  color: var(--ufc-blue);
+  text-decoration: underline;
+}
+
+.hub-footer-note {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 575.98px) {
+  .hub-brand {
+    border-right: none;
+    border-bottom: 4px solid var(--ufc-gold);
+    padding: 2rem 1.5rem;
+  }
+
+  .hub-brand img {
+    width: 70px;
+  }
+
+  .hub-brand-title {
+    font-size: 1.4rem;
+  }
+
+  .hub-actions {
+    padding: 1.75rem 1.5rem;
+  }
+}

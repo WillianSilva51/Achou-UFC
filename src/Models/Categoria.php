@@ -26,6 +26,26 @@ class Categoria extends BaseModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function existsByNormalizedName(string $nome, ?int $exceptId = null): bool
+    {
+        $sql = "SELECT 1
+                FROM {$this->table}
+                WHERE LOWER(BTRIM(nome)) = LOWER(BTRIM(:nome))";
+
+        $params = ['nome' => $nome];
+
+        if ($exceptId !== null) {
+            $sql .= " AND id <> :except_id";
+            $params['except_id'] = $exceptId;
+        }
+
+        $sql .= " LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function update(int $id, string $nome): bool
     {
         $sql  = "UPDATE {$this->table} SET nome = :nome WHERE id = :id";

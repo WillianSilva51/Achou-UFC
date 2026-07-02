@@ -47,6 +47,27 @@ class Local extends BaseModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function existsByNormalizedName(string $nome_local, ?int $exceptId = null): bool
+    {
+        $sql = "SELECT 1
+                FROM {$this->table}
+                WHERE deleted_at IS NULL
+                  AND LOWER(BTRIM(nome_local)) = LOWER(BTRIM(:nome_local))";
+
+        $params = ['nome_local' => $nome_local];
+
+        if ($exceptId !== null) {
+            $sql .= " AND id <> :except_id";
+            $params['except_id'] = $exceptId;
+        }
+
+        $sql .= " LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function update(int $id, string $nome_local, string $descricao): bool
     {
         $sql  = "UPDATE {$this->table}

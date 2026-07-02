@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Editar Item — Achou! UFC Quixadá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/components/admin.css">
+    <link rel="stylesheet" href="css/sections/nav.css">
+</head>
+
+<body class="admin-page">
+    <script src="js/app.js?v=docker-api-20260701"></script>
+    <script src="js/guard-admin.js?v=docker-api-20260701"></script>
+
+    <!-- ── Navbar ── -->
+    <nav class="navbar navbar-expand-lg navbar-ufc">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="admin.html">
+                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" alt="UFC" class="brand-logo">
+                <span class="brand-title">Achou!<span class="accent"> UFC</span> · Painel</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="admin.html" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> Painel
+                </a>
+                <div class="nav-auth-item">
+                    <a href="auth_hub.html" class="nav-link nav-link-login">
+                        <i class="bi bi-shield-lock"></i> Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+
+            <!-- Sidebar -->
+            <aside class="col-md-3 col-lg-2 admin-sidebar p-0">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin.html">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="cadastrar.html">
+                            <i class="bi bi-plus-circle"></i> Cadastrar item
+                        </a>
+                    </li>
+                    <li class="nav-item sidebar-link-active">
+                        <a class="nav-link sidebar-link-active" href="admin.html#itens">
+                            <i class="bi bi-box-seam"></i> Itens cadastrados
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin.html#reivindicacoes">
+                            <i class="bi bi-hand-index-thumb"></i> Reivindicações
+                        </a>
+                    </li>
+                    <li class="nav-item admin-sidebar-separator">
+                        <a class="nav-link" href="gestao_entidades.html">
+                            <i class="bi bi-tags"></i> Categorias e Locais
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="gestao_usuarios.html">
+                            <i class="bi bi-people"></i> Usuários
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+
+            <!-- Conteúdo principal -->
+            <main class="col-md-9 col-lg-10 py-4 px-3 px-md-4">
+
+                <!-- Breadcrumb -->
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="admin.html">Painel</a></li>
+                        <li class="breadcrumb-item"><a href="admin.html#itens">Itens</a></li>
+                        <li class="breadcrumb-item active">Editar item</li>
+                    </ol>
+                </nav>
+
+                <!-- Skeleton loading -->
+                <div id="bloco-loading">
+                    <div class="form-card p-4">
+                        <div class="skeleton skeleton-title mb-3"></div>
+                        <div class="row g-3">
+                            <div class="col-12"><div class="skeleton skeleton-input"></div></div>
+                            <div class="col-12"><div class="skeleton skeleton-textarea"></div></div>
+                            <div class="col-4"><div class="skeleton skeleton-input"></div></div>
+                            <div class="col-4"><div class="skeleton skeleton-input"></div></div>
+                            <div class="col-4"><div class="skeleton skeleton-input"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Erro de carregamento -->
+                <div class="alert alert-danger d-none" id="bloco-erro-id" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span id="texto-erro-id">Nenhum item encontrado com este ID.</span>
+                    <a href="admin.html" class="alert-link ms-2">Voltar ao painel</a>
+                </div>
+
+                <!-- Formulário (oculto até o item carregar) -->
+                <div class="d-none" id="bloco-form">
+                    <div class="form-card">
+                        <div class="card-body p-4">
+
+                            <!-- Cabeçalho com status atual -->
+                            <div class="d-flex justify-content-between align-items-start mb-4">
+                                <div>
+                                    <h5 class="mb-1 fw-bold">
+                                        <i class="bi bi-pencil-square text-primary me-2"></i>
+                                        Editar item
+                                    </h5>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <span class="text-muted small">Status atual:</span>
+                                        <span class="badge text-white" id="badge-status-atual">—</span>
+                                    </div>
+                                </div>
+                                <a href="admin.html" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-x-lg"></i> Cancelar
+                                </a>
+                            </div>
+
+                            <form id="form-editar" class="needs-validation" novalidate>
+                                <div class="row g-3">
+
+                                    <!-- Título -->
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="input-titulo"
+                                            required minlength="3" maxlength="120"
+                                            placeholder="Ex: Chave com chaveiro azul">
+                                        <div class="invalid-feedback">Informe o título (mín. 3 caracteres).</div>
+                                    </div>
+
+                                    <!-- Descrição -->
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">Descrição <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="input-descricao"
+                                            rows="3" required minlength="5" maxlength="500"
+                                            placeholder="Detalhes que ajudem o dono a identificar"></textarea>
+                                        <div class="invalid-feedback">Adicione uma descrição.</div>
+                                    </div>
+
+                                    <!-- Categoria -->
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Categoria <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="sel-categoria" required>
+                                            <option value="">Carregando...</option>
+                                        </select>
+                                        <div class="invalid-feedback">Selecione uma categoria.</div>
+                                    </div>
+
+                                    <!-- Local -->
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Local encontrado <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="sel-local" required>
+                                            <option value="">Carregando...</option>
+                                        </select>
+                                        <div class="invalid-feedback">Selecione o local.</div>
+                                    </div>
+
+                                    <!-- Data -->
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Data encontrado <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="input-data" required>
+                                        <div class="invalid-feedback">Informe a data.</div>
+                                    </div>
+
+                                    <!-- Status override -->
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">
+                                            Status
+                                            <span class="badge text-bg-warning admin-badge-note ms-1">Admin override</span>
+                                        </label>
+                                        <select class="form-select" id="sel-status" required>
+                                            <option value="disponivel">✅ Disponível — item aguardando reivindicação</option>
+                                            <option value="em_analise">⏳ Em análise — reivindicação pendente</option>
+                                            <option value="devolvido">📦 Devolvido — entregue ao dono</option>
+                                            <option value="arquivado">🗄 Arquivado — retirado da vitrine</option>
+                                        </select>
+                                        <div class="status-warning mt-2">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                            Alterar o status manualmente pode desincronizar reivindicações ativas.
+                                            Prefira aprovar/recusar pela seção de Reivindicações.
+                                        </div>
+                                    </div>
+
+                                    <!-- URL da foto -->
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">URL da foto (opcional)</label>
+                                        <input type="url" class="form-control" id="input-foto"
+                                            maxlength="2048" placeholder="https://i.imgur.com/...">
+                                        <div class="form-text">
+                                            Use um link público de imagem (Imgur, Google Drive público, etc.).
+                                        </div>
+                                    </div>
+
+                                    <!-- Preview da foto -->
+                                    <div class="col-12 d-none" id="col-preview">
+                                        <label class="form-label fw-semibold text-muted small">Preview</label>
+                                        <div class="foto-preview-wrap">
+                                            <img id="img-preview" src="" alt="Preview da foto">
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- Alertas de resultado -->
+                                <div class="alert alert-success d-none mt-4" id="alerta-sucesso" role="alert">
+                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                    Item atualizado com sucesso! Redirecionando...
+                                </div>
+                                <div class="alert alert-danger d-none mt-4" id="alerta-erro" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <span id="texto-erro-submit"></span>
+                                </div>
+
+                                <!-- Botões -->
+                                <div class="d-flex gap-2 mt-4">
+                                    <button type="submit" class="btn btn-ufc" id="btn-salvar">
+                                        <i class="bi bi-save me-1"></i> Salvar alterações
+                                    </button>
+                                    <a href="admin.html" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-lg me-1"></i> Cancelar
+                                    </a>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!-- /bloco-form -->
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+    <script src="js/editar-item.js?v=docker-api-20260701"></script>
+</body>
+
+</html>
