@@ -8,6 +8,32 @@ use PDO;
 class Usuario extends BaseModel
 {
     protected string $table = 'usuario';
+    private const EMAIL_CODE_TTL_MINUTES = 15;
+    private const EMAIL_CODE_MAX_ATTEMPTS = 5;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensureEmailVerificationSchema();
+    }
+
+    private function ensureEmailVerificationSchema(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+
+        $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN IF NOT EXISTS email_verificado_em TIMESTAMPTZ");
+        $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN IF NOT EXISTS codigo_verificacao_hash VARCHAR(128)");
+        $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN IF NOT EXISTS codigo_verificacao_expira_em TIMESTAMPTZ");
+        $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN IF NOT EXISTS codigo_verificacao_tentativas INT NOT NULL DEFAULT 0");
+        $this->db->exec("UPDATE {$this->table}
+                         SET email_verificado_em = COALESCE(email_verificado_em, criado_em)
+                         WHERE email_verificado_em IS NULL
+                           AND codigo_verificacao_hash IS NULL");
+        $checked = true;
+    }
 
     public function verificarCredenciais(string $email, string $senha): ?array
     {
@@ -16,6 +42,7 @@ class Usuario extends BaseModel
                          u.email,
                          u.senha,
                          u.role,
+                         u.email_verificado_em,
                          a.matricula,
                          ad.siap
                   FROM {$this->table} u
@@ -54,9 +81,10 @@ class Usuario extends BaseModel
     public function create(string $nome, string $email, string $senha, string $role = 'aluno'): int
     {
         $hash = password_hash($senha, PASSWORD_BCRYPT, ['cost' => 12]);
+        $emailVerificado = $role === 'admin' ? 'NOW()' : 'NULL';
 
-        $sql = "INSERT INTO {$this->table} (nome, email, senha, role)
-                VALUES (:nome, :email, :senha, :role)
+        $sql = "INSERT INTO {$this->table} (nome, email, senha, role, email_verificado_em)
+                VALUES (:nome, :email, :senha, :role, {$emailVerificado})
                 RETURNING id";
 
         $stmt = $this->db->prepare($sql);
@@ -68,6 +96,105 @@ class Usuario extends BaseModel
         ]);
 
         return (int) $stmt->fetchColumn();
+    }
+
+    public function gerarCodigoVerificacao(int $id): string
+    {
+        $codigo = (string) random_int(100000, 999999);
+        $hash = $this->hashCodigo($codigo);
+
+        $sql = "UPDATE {$this->table}
+                SET codigo_verificacao_hash = :hash,
+                    codigo_verificacao_expira_em = NOW() + (:ttl || ' minutes')::interval,
+                    codigo_verificacao_tentativas = 0
+                WHERE id = :id AND email_verificado_em IS NULL";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'id' => $id,
+            'hash' => $hash,
+            'ttl' => self::EMAIL_CODE_TTL_MINUTES,
+        ]);
+
+        return $codigo;
+    }
+
+    public function verificarCodigoEmail(string $email, string $codigo): array
+    {
+        $codigo = preg_replace('/\D+/', '', $codigo);
+        if (!preg_match('/^\d{6}$/', $codigo)) {
+            return ['ok' => false, 'error' => 'Código inválido. Informe os 6 dígitos recebidos por email.'];
+        }
+
+        $stmt = $this->db->prepare("SELECT id, email_verificado_em, codigo_verificacao_hash,
+                                           codigo_verificacao_expira_em, codigo_verificacao_tentativas
+                                    FROM {$this->table}
+                                    WHERE email = :email
+                                    LIMIT 1");
+        $stmt->execute(['email' => $email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            return ['ok' => false, 'error' => 'Código inválido ou expirado.'];
+        }
+
+        if (!empty($user['email_verificado_em'])) {
+            return ['ok' => true, 'already_verified' => true];
+        }
+
+        if (empty($user['codigo_verificacao_hash']) || empty($user['codigo_verificacao_expira_em'])) {
+            return ['ok' => false, 'error' => 'Solicite um novo código de ativação.'];
+        }
+
+        if ((int) $user['codigo_verificacao_tentativas'] >= self::EMAIL_CODE_MAX_ATTEMPTS) {
+            return ['ok' => false, 'error' => 'Muitas tentativas. Solicite um novo código de ativação.'];
+        }
+
+        if (strtotime($user['codigo_verificacao_expira_em']) < time()) {
+            return ['ok' => false, 'error' => 'Código expirado. Solicite um novo código de ativação.'];
+        }
+
+        $hashInformado = $this->hashCodigo($codigo);
+        if (!hash_equals($user['codigo_verificacao_hash'], $hashInformado)) {
+            $this->incrementarTentativaCodigo((int) $user['id']);
+            return ['ok' => false, 'error' => 'Código inválido ou expirado.'];
+        }
+
+        $sql = "UPDATE {$this->table}
+                SET email_verificado_em = NOW(),
+                    codigo_verificacao_hash = NULL,
+                    codigo_verificacao_expira_em = NULL,
+                    codigo_verificacao_tentativas = 0
+                WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => (int) $user['id']]);
+
+        return ['ok' => true];
+    }
+
+    public function findByEmail(string $email): ?array
+    {
+        $stmt = $this->db->prepare("SELECT id, nome, email, role, email_verificado_em
+                                    FROM {$this->table}
+                                    WHERE email = :email
+                                    LIMIT 1");
+        $stmt->execute(['email' => $email]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result !== false ? $result : null;
+    }
+
+    private function incrementarTentativaCodigo(int $id): void
+    {
+        $stmt = $this->db->prepare("UPDATE {$this->table}
+                                    SET codigo_verificacao_tentativas = codigo_verificacao_tentativas + 1
+                                    WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+    }
+
+    private function hashCodigo(string $codigo): string
+    {
+        $secret = $_ENV['JWT_SECRET'] ?? '';
+        return hash_hmac('sha256', $codigo, $secret);
     }
 
     public function update(int $id, string $nome, string $email, string $role): bool

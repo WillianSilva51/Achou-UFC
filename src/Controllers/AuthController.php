@@ -6,6 +6,8 @@ use Exception;
 use Models\Aluno;
 use Models\Usuario;
 use Core\Database;
+use Core\Mailer;
+use Core\RateLimiter;
 use PDOException;
 use Firebase\JWT\JWT;
 use Core\Request;
@@ -120,14 +122,21 @@ class AuthController
                 $alunoModel->create($usuarioId, $matricula);
             }
 
+            $codigo = $usuarioModel->gerarCodigoVerificacao($usuarioId);
+            if (!$this->enviarCodigoAtivacao($email, $nome, $codigo)) {
+                throw new \RuntimeException('Não foi possível enviar o código de ativação. Verifique o email informado e tente novamente.');
+            }
+
             $pdo->commit();
 
 
             http_response_code(201);
             echo json_encode([
                 'sucesso'    => true,
-                'mensagem'   => 'Usuário registrado com sucesso.',
+                'mensagem'   => 'Cadastro criado. Enviamos um código para seu email institucional para ativar a conta.',
                 'usuario_id' => $usuarioId,
+                'requires_verification' => true,
+                'email' => $email,
             ]);
 
         } catch (\PDOException $e) {
@@ -206,6 +215,23 @@ class AuthController
             return;
         }
 
+        if ($user['role'] === 'aluno' && empty($user['email_verificado_em'])) {
+            $codigo = $usuarioModel->gerarCodigoVerificacao((int) $user['id']);
+            if (!$this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo)) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Sua conta precisa ser ativada, mas não foi possível enviar o código agora. Tente novamente em instantes.']);
+                return;
+            }
+
+            http_response_code(403);
+            echo json_encode([
+                'error' => 'Sua conta ainda não está ativa. Enviamos um código para seu email institucional; informe o código para ativar a conta.',
+                'requires_verification' => true,
+                'email' => $user['email'],
+            ]);
+            return;
+        }
+
         $tempoExpiracao = isset($_ENV['JWT_EXPIRATION']) ? (int) $_ENV['JWT_EXPIRATION'] : 1200;
 
         $payload = [
@@ -247,6 +273,97 @@ class AuthController
                 'siap'      => $user['siap'] ?? null,
             ],
         ]);
+    }
+
+    public function verifyEmail(Request $request): void
+    {
+        header('Content-Type: application/json');
+        $dados = $request->getBody();
+
+        if (empty($dados['email']) || empty($dados['codigo'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Email e código são obrigatórios.']);
+            return;
+        }
+
+        $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
+        if (!$email) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Formato de email inválido.']);
+            return;
+        }
+
+        RateLimiter::check($this->rateLimitKey($email), 'verify-email', 8, 300);
+
+        $usuarioModel = new Usuario();
+        $resultado = $usuarioModel->verificarCodigoEmail($email, (string) $dados['codigo']);
+
+        if (!$resultado['ok']) {
+            http_response_code(400);
+            echo json_encode(['error' => $resultado['error'] ?? 'Código inválido ou expirado.']);
+            return;
+        }
+
+        http_response_code(200);
+        echo json_encode([
+            'sucesso' => true,
+            'mensagem' => 'Conta ativada com sucesso. Agora você já pode fazer login.',
+        ]);
+    }
+
+    public function resendVerification(Request $request): void
+    {
+        header('Content-Type: application/json');
+        $dados = $request->getBody();
+
+        $email = filter_var($dados['email'] ?? '', FILTER_VALIDATE_EMAIL);
+        if (!$email) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Informe um email válido.']);
+            return;
+        }
+
+        RateLimiter::check($this->rateLimitKey($email), 'resend-verification', 3, 300);
+
+        $usuarioModel = new Usuario();
+        $user = $usuarioModel->findByEmail($email);
+
+        if (!$user || !empty($user['email_verificado_em'])) {
+            http_response_code(200);
+            echo json_encode(['sucesso' => true, 'mensagem' => 'Se a conta precisar de ativação, um novo código será enviado.']);
+            return;
+        }
+
+        $codigo = $usuarioModel->gerarCodigoVerificacao((int) $user['id']);
+        if (!$this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo)) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Não foi possível enviar o código agora. Tente novamente em instantes.']);
+            return;
+        }
+
+        http_response_code(200);
+        echo json_encode(['sucesso' => true, 'mensagem' => 'Novo código enviado para seu email institucional.']);
+    }
+
+    private function enviarCodigoAtivacao(string $email, string $nome, string $codigo): bool
+    {
+        $codigoSeguro = htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8');
+        $nomeSeguro = htmlspecialchars($nome, ENT_QUOTES, 'UTF-8');
+
+        $html = "
+            <p>Olá, {$nomeSeguro}.</p>
+            <p>Use o código abaixo para ativar sua conta no Achou UFC:</p>
+            <p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">{$codigoSeguro}</p>
+            <p>O código expira em 15 minutos. Se você não solicitou este cadastro, ignore este email.</p>
+        ";
+
+        return Mailer::enviar($email, $nome, 'Código de ativação - Achou UFC', $html);
+    }
+
+    private function rateLimitKey(string $email): string
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        return $ip . '|' . strtolower($email);
     }
 
     public function logout(Request $request): void

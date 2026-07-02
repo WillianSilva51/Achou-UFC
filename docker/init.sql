@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS usuario (
     senha      VARCHAR(255) NOT NULL,
     criado_em  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     role       VARCHAR(20)  NOT NULL CHECK (role IN ('admin', 'aluno')),
+    email_verificado_em TIMESTAMPTZ,
+    codigo_verificacao_hash VARCHAR(128),
+    codigo_verificacao_expira_em TIMESTAMPTZ,
+    codigo_verificacao_tentativas INT NOT NULL DEFAULT 0,
     CONSTRAINT uq_usuario_email UNIQUE (email)
 );
 
@@ -66,6 +70,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_reivindicacao_ativa
     ON reivindicacao (item_id, aluno_id)
     WHERE status_reivindicacao = 'pendente';
 
+CREATE TABLE IF NOT EXISTS rate_limit (
+    chave       VARCHAR(64) NOT NULL PRIMARY KEY,
+    tentativas  INT         NOT NULL DEFAULT 1,
+    expira_em   TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_expira
+    ON rate_limit (expira_em);
+
 
 -- =============================================================
 --  SEEDS OBRIGATÓRIOS — não remova, o sistema depende destes
@@ -99,6 +112,10 @@ INSERT INTO usuario (id, nome, email, senha, role) VALUES
     (3, 'Maria Silva',          'maria@alu.ufc.br',   crypt('Aluno@123', gen_salt('bf', 12)), 'aluno'),
     (4, 'Joao Ferreira',        'joao@alu.ufc.br',    crypt('Aluno@123', gen_salt('bf', 12)), 'aluno')
 ON CONFLICT (email) DO NOTHING;
+
+UPDATE usuario
+SET email_verificado_em = COALESCE(email_verificado_em, criado_em)
+WHERE id IN (1, 2, 3, 4);
 
 INSERT INTO administracao (id, siap) VALUES
     (1, 123456)

@@ -66,6 +66,8 @@ $router  = new Router($request);
 // Auth (reCAPTCHA protege register e login; rate limiter removido desses endpoints)
 $router->post('/api/register', [AuthController::class, 'register']);
 $router->post('/api/login',    [AuthController::class, 'login']);
+$router->post('/api/verify-email', [AuthController::class, 'verifyEmail']);
+$router->post('/api/resend-verification', [AuthController::class, 'resendVerification']);
 $router->post('/api/logout',   [AuthController::class, 'logout']);
 
 // Usuários

@@ -638,6 +638,23 @@ const AchouApi = {
         });
     },
 
+    async verifyEmail(dados) {
+        return apiRequest('/api/verify-email', {
+            method: 'POST',
+            body: {
+                email: dados.email,
+                codigo: dados.codigo
+            }
+        });
+    },
+
+    async resendVerification(email) {
+        return apiRequest('/api/resend-verification', {
+            method: 'POST',
+            body: { email }
+        });
+    },
+
     async logout() {
         return apiRequest('/api/logout', { method: 'POST' });
     },
