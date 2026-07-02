@@ -173,6 +173,17 @@ class ReivindicacaoController
             $status_item = ($novo_status === 'aprovado') ? 'devolvido' : 'disponivel';
 
             $reivindicacaoModel->processarAvaliacao($id, $novo_status, $item_id, $status_item);
+            $usuarioModel = new \Models\Usuario();
+            // teste
+            $aluno = $usuarioModel->findById((int) $reivindicacao['aluno_id']);
+            if ($aluno) {
+                \Core\Mailer::enviar(
+                    $aluno['email'],
+                    $aluno['nome'],
+                    'Sua reivindicação foi ' . $novo_status,
+                    "<p>Olá, {$aluno['nome']}.</p><p>Sua reivindicação foi <strong>{$novo_status}</strong>.</p>"
+                );
+            }
 
             http_response_code(200);
             echo json_encode([

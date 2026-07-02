@@ -128,12 +128,23 @@ class ItemController
             $data_encontrado = $data_raw;
         }
 
-        $foto_url = $this->validarFotoUrl($dados['foto_url'] ?? null);
-        if ($foto_url === false) {
-            http_response_code(400);
-            echo json_encode(['error' => 'A URL da foto é inválida ou o domínio não é permitido.']);
-            return;
+        if (!empty($dados['foto_base64'])) {
+            $foto_url = $this->processarFotoBase64($dados['foto_base64']);
+            if ($foto_url === false) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Não foi possível processar a imagem enviada (formato inválido ou maior que 5MB).']);
+                return;
+            }
+        } else {
+            $foto_url = $this->validarFotoUrl($dados['foto_url'] ?? null);
+            if ($foto_url === false) {
+                http_response_code(400);
+                echo json_encode(['error' => 'A URL da foto é inválida ou o domínio não é permitido.']);
+                return;
+            }
         }
+    
+    
 
         $itemModel = new ItemPerdido();
 
@@ -531,9 +542,38 @@ class ItemController
         }
 
         if (!$permitido) {
-            return false;
+                return false;
+            }
+            return $url_limpa;
+        }
+        
+        
+        private function processarFotoBase64(string $base64): string|false
+        {
+            if (preg_match('/^data:image\/[a-zA-Z+]+;base64,(.+)$/', $base64, $m)) {
+                $base64 = $m[1];
+            }
+
+            $binario = base64_decode($base64, true);
+            if ($binario === false || strlen($binario) > 5 * 1024 * 1024) {
+                return false; // inválido ou acima de 5MB
+            }
+
+            $mimeReal   = (new \finfo(FILEINFO_MIME_TYPE))->buffer($binario);
+            $permitidos = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+
+            if (!isset($permitidos[$mimeReal])) {
+                return false;
+            }
+
+            $nomeFinal = 'item_' . bin2hex(random_bytes(8)) . '.' . $permitidos[$mimeReal];
+
+            try {
+               return \Core\SupabaseStorage::upload($binario, $nomeFinal, $mimeReal);
+           } catch (\RuntimeException $e) {
+               error_log('ItemController::processarFotoBase64 — ' . $e->getMessage());
+               return false;
+           }
         }
 
-        return $url_limpa;
     }
-}
