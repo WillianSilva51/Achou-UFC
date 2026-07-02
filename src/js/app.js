@@ -327,6 +327,7 @@ function redirectIfAuthenticated() {
 
 function renderAuthArea() {
     const user = authUser();
+    const currentPage = getCurrentPage();
     const authItems = new Set(
         Array.from(document.querySelectorAll('.nav-auth-item, .nav-link-login'))
             .map((element) => element.closest('.nav-auth-item') || element.closest('.nav-item') || element)
@@ -345,11 +346,15 @@ function renderAuthArea() {
             return;
         }
 
+        const primaryLink = user.role === 'admin'
+            ? '<a href="admin.html" class="nav-link nav-user-name"><i class="bi bi-speedometer2"></i> Painel</a>'
+            : currentPage === 'minhas_reivindicacoes.html'
+                ? ''
+                : '<a href="minhas_reivindicacoes.html" class="nav-link nav-user-name"><i class="bi bi-list-check"></i> Minhas reivindicações</a>';
+
         item.innerHTML = `
             <div class="nav-user d-flex flex-column flex-lg-row align-items-lg-center gap-2">
-                ${user.role === 'admin'
-                ? '<a href="admin.html" class="nav-link nav-user-name"><i class="bi bi-speedometer2"></i> Painel</a>'
-                : '<a href="minhas_reivindicacoes.html" class="nav-link nav-user-name"><i class="bi bi-list-check"></i> Minhas reivindicações</a>'}
+                ${primaryLink}
                 <a href="perfil.html" class="nav-link nav-user-name">
                     <i class="bi bi-person-circle"></i>
                     ${escapeHtml(user.nome || user.email || 'Usuário')}
@@ -361,6 +366,10 @@ function renderAuthArea() {
             </div>
         `;
     });
+}
+
+function getCurrentPage() {
+    return location.pathname.split('/').pop() || 'vitrine.html';
 }
 
 function parseJwtPayload(token) {

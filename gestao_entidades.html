@@ -19,28 +19,10 @@
 
 <body class="admin-page">
     <!-- Auth guard: só admin entra -->
-    <script src="js/app.js?v=docker-api-20260701"></script>
-    <script src="js/guard-admin.js?v=docker-api-20260701"></script>
+    <script src="src/js/app.js?v=docker-api-20260701"></script>
+    <script src="src/js/guard-admin.js?v=docker-api-20260701"></script>
 
-    <!-- ── Navbar ── -->
-    <nav class="navbar navbar-expand-lg navbar-ufc">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="admin.html">
-                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" alt="UFC" class="brand-logo">
-                <span class="brand-title">Achou!<span class="accent"> UFC</span> · Painel</span>
-            </a>
-            <div class="d-flex align-items-center gap-2">
-                <a href="vitrine.html" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-box-arrow-up-right"></i> Vitrine
-                </a>
-                <div class="nav-auth-item">
-                    <a href="auth_hub.html" class="nav-link nav-link-login">
-                        <i class="bi bi-shield-lock"></i> Login
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <div data-header="admin"></div>
 
     <!-- ── Layout admin: sidebar + main ── -->
     <div class="container-fluid p-0">
@@ -221,7 +203,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>
-    <script src="js/gestao-entidades.js?v=docker-api-20260701"></script>
+    <script src="src/js/gestao-entidades.js?v=docker-api-20260701"></script>
 </body>
 
 </html>
