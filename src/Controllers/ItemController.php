@@ -78,13 +78,11 @@ class ItemController
             return;
         }
 
-        $statusRaw = !empty($dados['status'])
-            ? $this->normalizarStatus($dados['status'])
-            : 'disponivel';
+        $statusRaw = trim($dados['status'] ?? 'disponivel');
 
         if (!in_array($statusRaw, self::STATUS_CRIACAO, true)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Status inválido. Use: disponivel ou em_analise.']);
+            echo json_encode(['error' => 'Status inválido ou em maiúsculas. Use estritamente: disponivel ou em_analise.']);
             return;
         }
 
@@ -355,11 +353,11 @@ class ItemController
             return;
         }
 
-        if (!empty($dados['status'])) {
-            $statusRaw = $this->normalizarStatus($dados['status']);
+        if (array_key_exists('status', $dados)) {
+            $statusRaw = trim($dados['status']);
             if (!in_array($statusRaw, self::STATUS_VALIDOS, true)) {
                 http_response_code(400);
-                echo json_encode(['error' => 'Status do item inválido. Use: ' . implode(', ', self::STATUS_VALIDOS)]);
+                echo json_encode(['error' => 'Status do item inválido ou em maiúsculas. Use estritamente: ' . implode(', ', self::STATUS_VALIDOS)]);
                 return;
             }
             $status = $statusRaw;
@@ -367,23 +365,28 @@ class ItemController
             $status = $itemAtual['status'];
         }
 
-        if (!empty($dados['data_encontrado'])) {
-            $data_raw = trim($dados['data_encontrado']);
-            $d        = \DateTime::createFromFormat('!Y-m-d', $data_raw);
-            if (!$d || $d->format('Y-m-d') !== $data_raw) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Formato de data inválido. Use AAAA-MM-DD.']);
-                return;
-            }
-            if ($d > new \DateTime('today')) {
-                http_response_code(400);
-                echo json_encode(['error' => 'A data em que o item foi encontrado não pode ser no futuro.']);
-                return;
-            }
-            $data_encontrado = $data_raw;
-        } else {
-            $data_encontrado = $itemAtual['data_encontrado'];
+        $data_raw = trim($dados['data_encontrado'] ?? '');
+        
+        if ($data_raw === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'A data em que o item foi encontrado é obrigatória e não pode ser vazia.']);
+            return;
         }
+
+        $d = \DateTime::createFromFormat('!Y-m-d', $data_raw);
+        if (!$d || $d->format('Y-m-d') !== $data_raw) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Formato de data inválido. Use AAAA-MM-DD.']);
+            return;
+        }
+
+        if ($d > new \DateTime('today')) {
+            http_response_code(400);
+            echo json_encode(['error' => 'A data em que o item foi encontrado não pode ser no futuro.']);
+            return;
+        }
+
+        $data_encontrado = $data_raw;
 
         if (array_key_exists('foto_url', $dados)) {
             if (empty($dados['foto_url'])) {

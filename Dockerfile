@@ -25,6 +25,9 @@ RUN printf '%s\n' \
         'error_reporting=E_ALL' \
         > /usr/local/etc/php/conf.d/achou-ufc.ini
 
+RUN echo "expose_php = Off" > /usr/local/etc/php/conf.d/hide-php.ini
+RUN echo "ServerTokens Prod\nServerSignature Off" >> /etc/apache2/apache2.conf
+
 RUN printf '%s\n' \
         '<Directory /var/www/html>' \
         '    Options -Indexes +FollowSymLinks' \
