@@ -11,25 +11,6 @@ const SAFE_REDIRECT_PAGES = new Set([
     'reivindicar.html',
     'vitrine.html'
 ]);
-const DEFAULT_HEADER_TEMPLATE = `
-<header class="header">
-    <nav class="navbar navbar-dark navbar-expand-lg navbar-ufc">
-        <div class="container" data-header-container>
-            <a href="auth_hub.html" class="navbar-brand d-flex align-items-center gap-2" data-header-brand>
-                <img src="assets/images/Brasao4_vertical_cor_300dpi.png" class="brand-logo" alt="Logo da UFC">
-                <span class="brand-title" data-header-brand-title>Achou! <span class="accent">UFC</span></span>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
-                aria-controls="nav" aria-label="Abrir menu" data-header-toggler>
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="nav" data-header-collapse>
-                <ul class="navbar-nav ms-auto gap-2" data-header-menu></ul>
-            </div>
-            <div class="d-none align-items-center gap-2 ms-auto" data-header-actions></div>
-        </div>
-    </nav>
-</header>`;
 const HEADER_VARIANTS = {
     public: {
         brandHref: 'auth_hub.html',
@@ -89,7 +70,6 @@ const HEADER_VARIANTS = {
 
 let categorias = [];
 let locais = [];
-let headerTemplatePromise = null;
 
 const ICONES_POR_NOME = {
     chave: 'bi-key-fill',
@@ -192,35 +172,80 @@ function authHomeFor(user = authUser()) {
     return user?.role === 'admin' ? 'admin.html' : 'vitrine.html';
 }
 
+function domEl(tagName, className = '', attributes = {}) {
+    const element = document.createElement(tagName);
+
+    if (className) {
+        element.className = className;
+    }
+
+    Object.entries(attributes).forEach(([name, value]) => {
+        if (value === undefined || value === null) return;
+        element.setAttribute(name, String(value));
+    });
+
+    return element;
+}
+
+function domIcon(iconClass) {
+    return domEl('i', `bi ${iconClass}`);
+}
+
+function appendIconText(parent, iconClass, text) {
+    parent.append(domIcon(iconClass), document.createTextNode(` ${text}`));
+}
+
 async function renderHeaderComponents() {
     const placeholders = Array.from(document.querySelectorAll('[data-header]'));
     if (!placeholders.length) return;
 
-    const templateHtml = await loadHeaderTemplate();
-
     placeholders.forEach((placeholder, index) => {
-        const template = document.createElement('template');
-        template.innerHTML = templateHtml.trim();
-
-        const header = template.content.firstElementChild;
-        if (!header) return;
-
+        const header = createHeaderElement();
         applyHeaderVariant(header, placeholder, index);
         placeholder.replaceWith(header);
     });
 }
 
-async function loadHeaderTemplate() {
-    if (!headerTemplatePromise) {
-        headerTemplatePromise = fetch('src/components/header.html', { cache: 'no-cache' })
-            .then((response) => {
-                if (!response.ok) throw new Error('Header component not found.');
-                return response.text();
-            })
-            .catch(() => DEFAULT_HEADER_TEMPLATE);
-    }
+function createHeaderElement() {
+    const header = domEl('header', 'header');
+    const nav = domEl('nav', 'navbar navbar-dark navbar-expand-lg navbar-ufc');
+    const container = domEl('div', 'container', { 'data-header-container': '' });
+    const brand = domEl('a', 'navbar-brand d-flex align-items-center gap-2', {
+        href: 'auth_hub.html',
+        'data-header-brand': ''
+    });
+    const logo = domEl('img', 'brand-logo', {
+        src: 'assets/images/Brasao4_vertical_cor_300dpi.png',
+        alt: 'Logo da UFC'
+    });
+    const brandTitle = domEl('span', 'brand-title', { 'data-header-brand-title': '' });
+    const accent = domEl('span', 'accent');
+    const toggler = domEl('button', 'navbar-toggler', {
+        type: 'button',
+        'data-bs-toggle': 'collapse',
+        'data-bs-target': '#nav',
+        'aria-controls': 'nav',
+        'aria-label': 'Abrir menu',
+        'data-header-toggler': ''
+    });
+    const togglerIcon = domEl('span', 'navbar-toggler-icon');
+    const collapse = domEl('div', 'collapse navbar-collapse', {
+        id: 'nav',
+        'data-header-collapse': ''
+    });
+    const menu = domEl('ul', 'navbar-nav ms-auto gap-2', { 'data-header-menu': '' });
+    const actions = domEl('div', 'd-none align-items-center gap-2 ms-auto', { 'data-header-actions': '' });
 
-    return headerTemplatePromise;
+    accent.textContent = 'UFC';
+    brandTitle.append('Achou! ', accent);
+    brand.append(logo, brandTitle);
+    toggler.appendChild(togglerIcon);
+    collapse.appendChild(menu);
+    container.append(brand, toggler, collapse, actions);
+    nav.appendChild(container);
+    header.appendChild(nav);
+
+    return header;
 }
 
 function applyHeaderVariant(header, placeholder, index) {
@@ -249,7 +274,13 @@ function applyHeaderVariant(header, placeholder, index) {
     }
 
     if (brandTitle) {
-        brandTitle.innerHTML = `Achou! <span class="accent">UFC</span>${config.brandSuffix ? ` · ${escapeHtml(config.brandSuffix)}` : ''}`;
+        const accent = domEl('span', 'accent');
+        accent.textContent = 'UFC';
+        brandTitle.replaceChildren(
+            document.createTextNode('Achou! '),
+            accent,
+            document.createTextNode(config.brandSuffix ? ` · ${config.brandSuffix}` : '')
+        );
     }
 
     if (collapse) {
@@ -267,54 +298,48 @@ function applyHeaderVariant(header, placeholder, index) {
         actions?.classList.remove('d-none');
         actions?.classList.add('d-flex');
         if (actions) {
-            actions.innerHTML = [
-                ...(config.actions || []).map(headerActionLink),
-                config.authAction ? headerAuthAction() : ''
-            ].join('');
+            const actionElements = (config.actions || []).map(headerActionLink);
+            if (config.authAction) {
+                actionElements.push(headerAuthAction());
+            }
+            actions.replaceChildren(...actionElements);
         }
         return;
     }
 
     actions?.classList.add('d-none');
     if (menu) {
-        menu.innerHTML = (config.links || HEADER_VARIANTS.public.links).map(headerMenuItem).join('');
+        menu.replaceChildren(...(config.links || HEADER_VARIANTS.public.links).map(headerMenuItem));
     }
 }
 
 function headerMenuItem(link) {
     const itemClass = link.auth ? 'nav-item nav-auth-item' : 'nav-item';
     const linkClass = ['nav-link', link.className].filter(Boolean).join(' ');
+    const item = domEl('li', itemClass);
+    const anchor = domEl('a', linkClass, { href: link.href });
 
-    return `
-        <li class="${itemClass}">
-            <a href="${escapeHtml(link.href)}" class="${escapeHtml(linkClass)}">
-                <i class="bi ${escapeHtml(link.icon)}"></i>
-                ${escapeHtml(link.label)}
-            </a>
-        </li>
-    `;
+    appendIconText(anchor, link.icon, link.label);
+    item.appendChild(anchor);
+
+    return item;
 }
 
 function headerActionLink(link) {
-    const id = link.id ? ` id="${escapeHtml(link.id)}"` : '';
+    const anchor = domEl('a', link.className || 'btn btn-sm btn-outline-light', { href: link.href });
 
-    return `
-        <a${id} href="${escapeHtml(link.href)}" class="${escapeHtml(link.className || 'btn btn-sm btn-outline-light')}">
-            <i class="bi ${escapeHtml(link.icon)}"></i>
-            ${escapeHtml(link.label)}
-        </a>
-    `;
+    if (link.id) {
+        anchor.id = link.id;
+    }
+    appendIconText(anchor, link.icon, link.label);
+
+    return anchor;
 }
 
 function headerAuthAction() {
-    return `
-        <div class="nav-auth-item">
-            <a href="auth_hub.html" class="nav-link nav-link-login">
-                <i class="bi bi-shield-lock"></i>
-                Acessar
-            </a>
-        </div>
-    `;
+    const wrapper = domEl('div', 'nav-auth-item');
+    wrapper.appendChild(createAuthAccessLink());
+    return wrapper;
 }
 
 function redirectIfAuthenticated() {
@@ -337,35 +362,37 @@ function renderAuthArea() {
         item.classList.add('nav-auth-item');
 
         if (!user) {
-            item.innerHTML = `
-                <a href="auth_hub.html" class="nav-link nav-link-login">
-                    <i class="bi bi-shield-lock"></i>
-                    Acessar
-                </a>
-            `;
+            item.replaceChildren(createAuthAccessLink());
             return;
         }
 
-        const primaryLink = user.role === 'admin'
-            ? '<a href="admin.html" class="nav-link nav-user-name"><i class="bi bi-speedometer2"></i> Painel</a>'
-            : currentPage === 'minhas_reivindicacoes.html'
-                ? ''
-                : '<a href="minhas_reivindicacoes.html" class="nav-link nav-user-name"><i class="bi bi-list-check"></i> Minhas reivindicações</a>';
+        const userLinks = [];
+        if (user.role === 'admin') {
+            userLinks.push(createNavUserLink('admin.html', 'bi-speedometer2', 'Painel'));
+        } else if (currentPage !== 'minhas_reivindicacoes.html') {
+            userLinks.push(createNavUserLink('minhas_reivindicacoes.html', 'bi-list-check', 'Minhas reivindicações'));
+        }
 
-        item.innerHTML = `
-            <div class="nav-user d-flex flex-column flex-lg-row align-items-lg-center gap-2">
-                ${primaryLink}
-                <a href="perfil.html" class="nav-link nav-user-name">
-                    <i class="bi bi-person-circle"></i>
-                    ${escapeHtml(user.nome || user.email || 'Usuário')}
-                </a>
-                <button type="button" class="btn btn-sm btn-gold" data-logout>
-                    <i class="bi bi-box-arrow-right"></i>
-                    Fazer Logout
-                </button>
-            </div>
-        `;
+        const wrapper = domEl('div', 'nav-user d-flex flex-column flex-lg-row align-items-lg-center gap-2');
+        const profileLink = createNavUserLink('perfil.html', 'bi-person-circle', user.nome || user.email || 'Usuário');
+        const logoutButton = domEl('button', 'btn btn-sm btn-gold', { type: 'button', 'data-logout': '' });
+
+        appendIconText(logoutButton, 'bi-box-arrow-right', 'Fazer Logout');
+        wrapper.append(...userLinks, profileLink, logoutButton);
+        item.replaceChildren(wrapper);
     });
+}
+
+function createAuthAccessLink() {
+    const link = domEl('a', 'nav-link nav-link-login', { href: 'auth_hub.html' });
+    appendIconText(link, 'bi-shield-lock', 'Acessar');
+    return link;
+}
+
+function createNavUserLink(href, iconClass, label) {
+    const link = domEl('a', 'nav-link nav-user-name', { href });
+    appendIconText(link, iconClass, label);
+    return link;
 }
 
 function getCurrentPage() {

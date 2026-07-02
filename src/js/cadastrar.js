@@ -14,12 +14,44 @@ async function carregarCombos() {
             AchouApi.listarCategorias(),
             AchouApi.listarLocais()
         ]);
-        selCat.innerHTML = '<option value="">Selecione...</option>' + categorias.map((c) => `<option value="${escapeHtml(String(c.id))}">${escapeHtml(c.nome)}</option>`).join('');
-        selLoc.innerHTML = '<option value="">Selecione...</option>' + locais.map((l) => `<option value="${escapeHtml(String(l.id))}">${escapeHtml(l.nome)}</option>`).join('');
+        preencherSelect(selCat, categorias);
+        preencherSelect(selLoc, locais);
     } catch (error) {
-        document.getElementById('ok-msg').className = 'alert alert-danger mt-3';
-        document.getElementById('ok-msg').innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${escapeHtml(error.message)}`;
+        mostrarMensagem('danger', 'bi-exclamation-triangle-fill', error.message);
     }
+}
+
+function preencherSelect(select, lista) {
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Selecione...';
+
+    select.replaceChildren(
+        defaultOption,
+        ...lista.map((item) => {
+            const option = document.createElement('option');
+            option.value = String(item.id);
+            option.textContent = item.nome;
+            return option;
+        })
+    );
+}
+
+function mostrarMensagem(tipo, iconClass, mensagem) {
+    const ok = document.getElementById('ok-msg');
+
+    ok.className = `alert alert-${tipo} mt-3`;
+    ok.replaceChildren(domIcon(iconClass), document.createTextNode(` ${mensagem}`));
+    return ok;
+}
+
+function setSubmitContent(iconClass, text) {
+    submitItem.replaceChildren(domIcon(iconClass), document.createTextNode(` ${text}`));
+}
+
+function setSubmitLoading() {
+    const spinner = domEl('span', 'spinner-border spinner-border-sm me-2');
+    submitItem.replaceChildren(spinner, document.createTextNode('Cadastrando...'));
 }
 
 formItem.addEventListener('submit', async function (event) {
@@ -57,23 +89,21 @@ formItem.addEventListener('submit', async function (event) {
 
     cadastroEmAndamento = true;
     submitItem.disabled = true;
-    submitItem.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cadastrando...';
+    setSubmitLoading();
 
     try {
         await AchouApi.criarItem(payload);
         this.reset();
         this.classList.remove('was-validated');
         dataEncontrado.value = new Date().toISOString().slice(0, 10);
-        ok.className = 'alert alert-success mt-3';
-        ok.innerHTML = '<i class="bi bi-check-circle-fill"></i> Item cadastrado com sucesso!';
+        mostrarMensagem('success', 'bi-check-circle-fill', 'Item cadastrado com sucesso!');
         setTimeout(() => ok.classList.add('d-none'), 3000);
     } catch (error) {
-        ok.className = 'alert alert-danger mt-3';
-        ok.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${escapeHtml(error.message)}`;
+        mostrarMensagem('danger', 'bi-exclamation-triangle-fill', error.message);
     } finally {
         cadastroEmAndamento = false;
         submitItem.disabled = false;
-        submitItem.innerHTML = '<i class="bi bi-save"></i> Cadastrar';
+        setSubmitContent('bi-save', 'Cadastrar');
     }
 });
 

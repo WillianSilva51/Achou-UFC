@@ -9,11 +9,22 @@ const STATUS_LABEL = {
 
 function preencherSelect(selectId, lista, valueKey, labelKey, valorSelecionado) {
     const sel = document.getElementById(selectId);
-    sel.innerHTML = lista.map((item) => `
-        <option value="${escapeHtml(String(item[valueKey]))}" ${Number(item[valueKey]) === Number(valorSelecionado) ? 'selected' : ''}>
-            ${escapeHtml(item[labelKey])}
-        </option>
-    `).join('');
+    sel.replaceChildren(...lista.map((item) => {
+        const option = document.createElement('option');
+        option.value = String(item[valueKey]);
+        option.textContent = item[labelKey];
+        option.selected = Number(item[valueKey]) === Number(valorSelecionado);
+        return option;
+    }));
+}
+
+function setSaveButtonContent(button) {
+    button.replaceChildren(domIcon('bi-save me-1'), document.createTextNode(' Salvar alterações'));
+}
+
+function setSaveButtonLoading(button) {
+    const spinner = domEl('span', 'spinner-border spinner-border-sm me-2');
+    button.replaceChildren(spinner, document.createTextNode('Salvando...'));
 }
 
 document.getElementById('input-foto').addEventListener('input', function () {
@@ -91,7 +102,7 @@ document.getElementById('form-editar').addEventListener('submit', async function
     const alertaErr = document.getElementById('alerta-erro');
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+    setSaveButtonLoading(btn);
     alertaSuc.classList.add('d-none');
     alertaErr.classList.add('d-none');
 
@@ -101,7 +112,7 @@ document.getElementById('form-editar').addEventListener('submit', async function
         alertaErr.classList.remove('d-none');
         alertaErr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-save me-1"></i> Salvar alterações';
+        setSaveButtonContent(btn);
         return;
     }
 
@@ -125,7 +136,7 @@ document.getElementById('form-editar').addEventListener('submit', async function
         alertaErr.classList.remove('d-none');
         alertaErr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-save me-1"></i> Salvar alterações';
+        setSaveButtonContent(btn);
     }
 });
 

@@ -6,29 +6,47 @@ const STATUS_CONFIG = {
 
 function badgeStatus(status) {
     const s = STATUS_CONFIG[status] || { cls: 'text-bg-secondary', label: status, icon: 'bi-question-circle' };
-    return `<span class="badge ${s.cls} d-inline-flex align-items-center gap-1">
-        <i class="bi ${s.icon}"></i> ${s.label}
-    </span>`;
+    const badge = domEl('span', `badge ${s.cls} d-inline-flex align-items-center gap-1`);
+
+    badge.append(domIcon(s.icon), document.createTextNode(` ${s.label}`));
+    return badge;
+}
+
+function renderReivindicacaoRow(reivindicacao) {
+    const status = reivindicacao.status_reivindicacao || 'pendente';
+    const row = document.createElement('tr');
+    const idCell = domEl('td', 'ps-3 text-muted small');
+    const itemCell = document.createElement('td');
+    const itemTitle = document.createElement('strong');
+    const localCell = domEl('td', 'text-muted small');
+    const dateCell = domEl('td', 'text-muted small');
+    const statusCell = document.createElement('td');
+
+    if (status === 'aprovado') {
+        row.className = 'table-success';
+    }
+
+    idCell.textContent = `#${reivindicacao.id}`;
+    itemTitle.textContent = reivindicacao.item_titulo || reivindicacao.titulo || `Item #${reivindicacao.item_id}`;
+    itemCell.appendChild(itemTitle);
+    if (reivindicacao.categoria) {
+        const categoria = domEl('div', 'small text-muted');
+        categoria.textContent = reivindicacao.categoria;
+        itemCell.appendChild(categoria);
+    }
+    localCell.textContent = reivindicacao.local || reivindicacao.local_nome || '—';
+    dateCell.textContent = formatDate(reivindicacao.data_solicitacao);
+    statusCell.appendChild(badgeStatus(status));
+    row.append(idCell, itemCell, localCell, dateCell, statusCell);
+
+    return row;
 }
 
 function renderTabelaReivindicacoes(lista) {
     const tbody = document.getElementById('tbody-reivs');
     document.getElementById('contador-reivs').textContent = lista.length;
 
-    tbody.innerHTML = lista.map((reivindicacao) => {
-        const status = reivindicacao.status_reivindicacao || 'pendente';
-        return `
-            <tr class="${status === 'aprovado' ? 'table-success' : ''}">
-                <td class="ps-3 text-muted small">#${escapeHtml(String(reivindicacao.id))}</td>
-                <td>
-                    <strong>${escapeHtml(reivindicacao.item_titulo || reivindicacao.titulo || `Item #${reivindicacao.item_id}`)}</strong>
-                    ${reivindicacao.categoria ? `<div class="small text-muted">${escapeHtml(reivindicacao.categoria)}</div>` : ''}
-                </td>
-                <td class="text-muted small">${escapeHtml(reivindicacao.local || reivindicacao.local_nome || '—')}</td>
-                <td class="text-muted small">${formatDate(reivindicacao.data_solicitacao)}</td>
-                <td>${badgeStatus(status)}</td>
-            </tr>`;
-    }).join('');
+    tbody.replaceChildren(...lista.map(renderReivindicacaoRow));
 }
 
 async function carregarReivindicacoes() {

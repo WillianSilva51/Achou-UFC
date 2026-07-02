@@ -12,10 +12,19 @@ const elementos = {
 let itens = [];
 
 function renderSelect(select, opcoes, labelPadrao) {
-    select.innerHTML = [
-        `<option value="">${escapeHtml(labelPadrao)}</option>`,
-        ...opcoes.map((opcao) => `<option value="${escapeHtml(String(opcao.id))}">${escapeHtml(opcao.nome)}</option>`)
-    ].join('');
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = labelPadrao;
+
+    select.replaceChildren(
+        defaultOption,
+        ...opcoes.map((opcao) => {
+            const option = document.createElement('option');
+            option.value = String(opcao.id);
+            option.textContent = opcao.nome;
+            return option;
+        })
+    );
 }
 
 function statusLabel(status) {
@@ -30,39 +39,81 @@ function statusLabel(status) {
 }
 
 function renderItem(item) {
-    const titulo = escapeHtml(item.titulo);
-    const descricao = escapeHtml(item.descricao);
-    const status = escapeHtml(item.status);
-    const itemId = encodeURIComponent(String(item.id));
-    const categoria = escapeHtml(item.categoria || nomeCategoria(item.categoria_id));
-    const local = escapeHtml(item.local || nomeLocal(item.local_id));
+    const column = domEl('div', 'col-12 col-md-6 col-lg-4');
+    const article = domEl('article', 'card item-card');
+    const imageWrapper = domEl('div', 'item-img');
+    const categoryBadge = domEl('span', 'badge badge-cat');
+    const statusBadge = domEl('span', `badge badge-status status-${item.status}`);
+    const body = domEl('div', 'card-body d-flex flex-column');
+    const title = domEl('h5', 'card-title');
+    const description = domEl('p', 'card-text text-muted small');
+    const infoList = domEl('ul', 'list-unstyled small mt-auto mb-3');
 
-    return `
-        <div class="col-12 col-md-6 col-lg-4">
-            <article class="card item-card">
-                <div class="item-img">
-                    ${item.foto_url
-            ? `<img src="${escapeHtml(item.foto_url)}" alt="${titulo}">`
-            : `<i class="bi ${iconeCategoria(item.categoria_id)}" aria-hidden="true"></i>`}
-                    <span class="badge badge-cat">${categoria}</span>
-                    <span class="badge badge-status status-${status}">${statusLabel(item.status)}</span>
-                </div>
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">${titulo}</h5>
-                    <p class="card-text text-muted small">${descricao}</p>
-                    <ul class="list-unstyled small mt-auto mb-3">
-                        <li><i class="bi bi-geo-alt"></i> <strong>Local:</strong> ${local}</li>
-                        <li><i class="bi bi-calendar3"></i> <strong>Encontrado em:</strong> ${formatDate(item.data_encontrado)}</li>
-                    </ul>
-                    ${item.status !== 'disponivel'
-            ? '<button class="btn btn-outline-secondary w-100" disabled>Indisponivel</button>'
-            : `<a class="btn btn-ufc w-100" href="reivindicar.html?id=${itemId}">
-                            <i class="bi bi-hand-index-thumb"></i> Reivindicar
-                        </a>`}
-                </div>
-            </article>
-        </div>
-    `;
+    if (item.foto_url) {
+        const image = document.createElement('img');
+        image.src = item.foto_url;
+        image.alt = item.titulo;
+        imageWrapper.appendChild(image);
+    } else {
+        const icon = domIcon(iconeCategoria(item.categoria_id));
+        icon.setAttribute('aria-hidden', 'true');
+        imageWrapper.appendChild(icon);
+    }
+
+    categoryBadge.textContent = item.categoria || nomeCategoria(item.categoria_id);
+    statusBadge.textContent = statusLabel(item.status);
+    imageWrapper.append(categoryBadge, statusBadge);
+
+    title.textContent = item.titulo;
+    description.textContent = item.descricao;
+    infoList.append(
+        renderItemInfo('bi-geo-alt', 'Local:', item.local || nomeLocal(item.local_id)),
+        renderItemInfo('bi-calendar3', 'Encontrado em:', formatDate(item.data_encontrado))
+    );
+
+    body.append(title, description, infoList, renderItemAction(item));
+    article.append(imageWrapper, body);
+    column.appendChild(article);
+
+    return column;
+}
+
+function renderItemInfo(iconClass, label, value) {
+    const item = document.createElement('li');
+    const labelElement = document.createElement('strong');
+
+    labelElement.textContent = label;
+    item.append(domIcon(iconClass), document.createTextNode(' '), labelElement, document.createTextNode(` ${value}`));
+
+    return item;
+}
+
+function renderItemAction(item) {
+    if (item.status !== 'disponivel') {
+        const button = domEl('button', 'btn btn-outline-secondary w-100', { disabled: '' });
+        button.textContent = 'Indisponivel';
+        return button;
+    }
+
+    const link = domEl('a', 'btn btn-ufc w-100', { href: `reivindicar.html?id=${encodeURIComponent(String(item.id))}` });
+    appendIconText(link, 'bi-hand-index-thumb', 'Reivindicar');
+    return link;
+}
+
+function renderListAlert(message, variant = 'light', link = null) {
+    const column = domEl('div', 'col-12');
+    const alert = domEl('div', `alert alert-${variant} ${variant === 'light' ? 'border ' : ''}text-center`);
+
+    alert.appendChild(document.createTextNode(message));
+    if (link) {
+        alert.appendChild(document.createTextNode(' '));
+        const anchor = domEl('a', 'alert-link', { href: link.href });
+        anchor.textContent = link.label;
+        alert.appendChild(anchor);
+    }
+    column.appendChild(alert);
+
+    return column;
 }
 
 function filtrarItens() {
@@ -87,17 +138,11 @@ function renderItens() {
     elementos.total.textContent = filtrados.length;
 
     if (!filtrados.length) {
-        elementos.lista.innerHTML = `
-            <div class="col-12">
-                <div class="alert alert-light border text-center">
-                    Nenhum item encontrado com os filtros atuais.
-                </div>
-            </div>
-        `;
+        elementos.lista.replaceChildren(renderListAlert('Nenhum item encontrado com os filtros atuais.'));
         return;
     }
 
-    elementos.lista.innerHTML = filtrados.map(renderItem).join('');
+    elementos.lista.replaceChildren(...filtrados.map(renderItem));
 }
 
 async function init() {
@@ -112,24 +157,15 @@ async function init() {
         renderItens();
     } catch (error) {
         if (error.status === 401) {
-            elementos.lista.innerHTML = `
-                <div class="col-12">
-                    <div class="alert alert-warning text-center">
-                        Faça login para visualizar e reivindicar os itens encontrados.
-                        <a class="alert-link" href="login.html?next=vitrine.html">Entrar</a>
-                    </div>
-                </div>
-            `;
+            elementos.lista.replaceChildren(renderListAlert(
+                'Faça login para visualizar e reivindicar os itens encontrados.',
+                'warning',
+                { href: 'login.html?next=vitrine.html', label: 'Entrar' }
+            ));
             return;
         }
 
-        elementos.lista.innerHTML = `
-            <div class="col-12">
-                <div class="alert alert-danger text-center">
-                    ${escapeHtml(error.message)}
-                </div>
-            </div>
-        `;
+        elementos.lista.replaceChildren(renderListAlert(error.message, 'danger'));
         return;
     }
 

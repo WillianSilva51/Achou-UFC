@@ -14,7 +14,9 @@ function itemStatusBadge(status) {
         devolvido: 'Devolvido',
         arquivado: 'Arquivado'
     };
-    return `<span class="badge ${classes[status] || 'text-bg-light'}">${labels[status] || escapeHtml(status)}</span>`;
+    const badge = domEl('span', `badge ${classes[status] || 'text-bg-light'}`);
+    badge.textContent = labels[status] || status;
+    return badge;
 }
 
 function reivindicacaoBadge(status) {
@@ -23,7 +25,98 @@ function reivindicacaoBadge(status) {
         aprovado: 'text-bg-success',
         recusado: 'text-bg-secondary'
     };
-    return `<span class="badge ${classes[status] || 'text-bg-light'}">${escapeHtml(status)}</span>`;
+    const badge = domEl('span', `badge ${classes[status] || 'text-bg-light'}`);
+    badge.textContent = status;
+    return badge;
+}
+
+function renderEmptyRow(message, colspan = 7, className = 'text-center text-muted py-4') {
+    const row = document.createElement('tr');
+    const cell = domEl('td', className, { colspan });
+
+    cell.textContent = message;
+    row.appendChild(cell);
+    return row;
+}
+
+function appendTextCell(row, text, className = '') {
+    const cell = domEl('td', className);
+    cell.textContent = text;
+    row.appendChild(cell);
+    return cell;
+}
+
+function renderItemRow(item) {
+    const row = document.createElement('tr');
+    const titleCell = document.createElement('td');
+    const title = document.createElement('strong');
+    const description = domEl('div', 'small text-muted');
+    const statusCell = document.createElement('td');
+    const actionsCell = domEl('td', 'text-end');
+    const editLink = domEl('a', 'btn btn-sm btn-outline-primary me-1', {
+        href: `editar_item.html?id=${encodeURIComponent(String(item.id))}`,
+        title: 'Editar item'
+    });
+    const archiveButton = domEl('button', 'btn btn-sm btn-outline-danger', {
+        'data-delete-item': String(item.id),
+        title: 'Arquivar item'
+    });
+
+    appendTextCell(row, String(item.id));
+    title.textContent = item.titulo;
+    description.textContent = item.descricao || '';
+    titleCell.append(title, description);
+    row.appendChild(titleCell);
+    appendTextCell(row, item.categoria || nomeCategoria(item.categoria_id));
+    appendTextCell(row, item.local || nomeLocal(item.local_id));
+    appendTextCell(row, formatDate(item.data_encontrado));
+    statusCell.appendChild(itemStatusBadge(item.status));
+    row.appendChild(statusCell);
+    editLink.appendChild(domIcon('bi-pencil'));
+    archiveButton.appendChild(domIcon('bi-archive'));
+    actionsCell.append(editLink, archiveButton);
+    row.appendChild(actionsCell);
+
+    return row;
+}
+
+function renderReivindicacaoRow(reivindicacao) {
+    const row = document.createElement('tr');
+    const alunoCell = document.createElement('td');
+    const alunoNome = document.createElement('strong');
+    const matricula = domEl('div', 'small text-muted');
+    const statusCell = document.createElement('td');
+    const actionsCell = domEl('td', 'text-end');
+
+    appendTextCell(row, String(reivindicacao.id));
+    appendTextCell(row, reivindicacao.item_titulo || '');
+    alunoNome.textContent = reivindicacao.aluno_nome || '';
+    matricula.textContent = reivindicacao.matricula || '';
+    alunoCell.append(alunoNome, matricula);
+    row.appendChild(alunoCell);
+    appendTextCell(row, reivindicacao.aluno_email || '');
+    appendTextCell(row, formatDate(reivindicacao.data_solicitacao));
+    statusCell.appendChild(reivindicacaoBadge(reivindicacao.status_reivindicacao));
+    row.appendChild(statusCell);
+
+    if (reivindicacao.status_reivindicacao === 'pendente') {
+        actionsCell.append(
+            renderStatusButton(reivindicacao.id, 'aprovado', 'btn btn-sm btn-outline-success', 'Aprovar', 'bi-check-lg'),
+            renderStatusButton(reivindicacao.id, 'recusado', 'btn btn-sm btn-outline-danger', 'Recusar', 'bi-x-lg')
+        );
+    }
+
+    row.appendChild(actionsCell);
+    return row;
+}
+
+function renderStatusButton(id, status, className, title, iconClass) {
+    const button = domEl('button', className, {
+        'data-reiv-status': `${id}:${status}`,
+        title
+    });
+    button.appendChild(domIcon(iconClass));
+    return button;
 }
 
 function renderItensAdmin(itens) {
@@ -32,67 +125,22 @@ function renderItensAdmin(itens) {
     document.getElementById('stat-entr').textContent = itens.filter((item) => item.status === 'devolvido').length;
 
     if (!itens.length) {
-        tblItens.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhum item cadastrado.</td></tr>';
+        tblItens.replaceChildren(renderEmptyRow('Nenhum item cadastrado.'));
         return;
     }
 
-    tblItens.innerHTML = itens.map((item) => `
-        <tr>
-            <td>${escapeHtml(String(item.id))}</td>
-            <td>
-                <strong>${escapeHtml(item.titulo)}</strong>
-                <div class="small text-muted">${escapeHtml(item.descricao || '')}</div>
-            </td>
-            <td>${escapeHtml(item.categoria || nomeCategoria(item.categoria_id))}</td>
-            <td>${escapeHtml(item.local || nomeLocal(item.local_id))}</td>
-            <td>${formatDate(item.data_encontrado)}</td>
-            <td>${itemStatusBadge(item.status)}</td>
-            <td class="text-end">
-                <a class="btn btn-sm btn-outline-primary me-1" href="editar_item.html?id=${encodeURIComponent(String(item.id))}" title="Editar item">
-                    <i class="bi bi-pencil"></i>
-                </a>
-                <button class="btn btn-sm btn-outline-danger" data-delete-item="${escapeHtml(String(item.id))}" title="Arquivar item">
-                    <i class="bi bi-archive"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    tblItens.replaceChildren(...itens.map(renderItemRow));
 }
 
 function renderReivindicacoesAdmin(reivindicacoes) {
     document.getElementById('stat-reiv').textContent = reivindicacoes.length;
 
     if (!reivindicacoes.length) {
-        tblReiv.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhuma reivindicação recebida.</td></tr>';
+        tblReiv.replaceChildren(renderEmptyRow('Nenhuma reivindicação recebida.'));
         return;
     }
 
-    tblReiv.innerHTML = reivindicacoes.map((reivindicacao) => {
-        const pendente = reivindicacao.status_reivindicacao === 'pendente';
-        return `
-            <tr>
-                <td>${escapeHtml(String(reivindicacao.id))}</td>
-                <td>${escapeHtml(reivindicacao.item_titulo || '')}</td>
-                <td>
-                    <strong>${escapeHtml(reivindicacao.aluno_nome || '')}</strong>
-                    <div class="small text-muted">${escapeHtml(reivindicacao.matricula || '')}</div>
-                </td>
-                <td>${escapeHtml(reivindicacao.aluno_email || '')}</td>
-                <td>${formatDate(reivindicacao.data_solicitacao)}</td>
-                <td>${reivindicacaoBadge(reivindicacao.status_reivindicacao)}</td>
-                <td class="text-end">
-                    ${pendente ? `
-                        <button class="btn btn-sm btn-outline-success" data-reiv-status="${escapeHtml(String(reivindicacao.id))}:aprovado" title="Aprovar">
-                            <i class="bi bi-check-lg"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" data-reiv-status="${escapeHtml(String(reivindicacao.id))}:recusado" title="Recusar">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    ` : ''}
-                </td>
-            </tr>
-        `;
-    }).join('');
+    tblReiv.replaceChildren(...reivindicacoes.map(renderReivindicacaoRow));
 }
 
 async function carregarPainel() {
@@ -105,8 +153,8 @@ async function carregarPainel() {
         renderItensAdmin(itens);
         renderReivindicacoesAdmin(reivindicacoes);
     } catch (error) {
-        tblItens.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
-        tblReiv.innerHTML = '';
+        tblItens.replaceChildren(renderEmptyRow(error.message, 7, 'text-center text-danger py-4'));
+        tblReiv.replaceChildren();
     }
 }
 
