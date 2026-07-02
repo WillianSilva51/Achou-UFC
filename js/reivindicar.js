@@ -97,7 +97,7 @@ async function initReivindicacao() {
             </form>
 
             <div id="sucesso" class="alert alert-success mt-3 d-none">
-              <i class="bi bi-check-circle-fill"></i> Reivindicação registrada! A recepção fará contato em até 2 dias úteis. Protocolo: <strong id="protocolo"></strong>
+              <i class="bi bi-check-circle-fill"></i> Reivindicação registrada! Você tem 4 horas para ir na recepção do Campus. Protocolo: <strong id="protocolo"></strong>
             </div>
           </div>
         </div>
@@ -121,7 +121,7 @@ async function initReivindicacao() {
         const s = document.getElementById('sucesso');
         s.className = 'alert alert-success mt-3';
         const protocolo = '#' + String(novo.id_reivindicacao || novo.id || '').padStart(4, '0');
-        s.innerHTML = `<i class="bi bi-check-circle-fill"></i> Reivindicação registrada! A recepção fará contato em até 2 dias úteis. Protocolo: <strong>${protocolo}</strong>`;
+        s.innerHTML = `<i class="bi bi-check-circle-fill"></i> Reivindicação registrada! Você tem 4 horas para ir na recepção do Campus. Protocolo: <strong>${protocolo}</strong>`;
         s.classList.remove('d-none');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
