@@ -121,6 +121,21 @@ class UsuarioController
             return;
         }
 
+        if (!$isSelf && $role === 'admin' && $existe['role'] !== 'admin') {
+            if (empty($dados['senha_admin'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Confirme sua senha de administrador para promover este usuário a admin.']);
+                return;
+            }
+        
+            $adminLogado = $usuarioModel->findByIdComSenha((int) $usuarioLogado->sub);
+            if (!$adminLogado || !password_verify($dados['senha_admin'], $adminLogado['senha'])) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Senha de administrador incorreta. Acesso negado.']);
+                return;
+            }
+        }
+
         if (mb_strlen($nome) < 3 || mb_strlen($nome) > 150) {
             http_response_code(400);
             echo json_encode(['error' => 'O nome deve ter entre 3 e 150 caracteres.']);
