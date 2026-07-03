@@ -8,6 +8,7 @@ use PDO;
 class Reivindicacao extends BaseModel
 {
     protected string $table = 'reivindicacao';
+    private const MAX_REIVINDICACOES_PENDENTES_POR_ALUNO = 3;
 
     public function create(
         string $status_reivindicacao,
@@ -98,11 +99,18 @@ class Reivindicacao extends BaseModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    
     public function registrarPedido(int $item_id, int $aluno_id): int
     {
-    try {
+        try {
             $this->db->beginTransaction();
+
+            $stmtAluno = $this->db->prepare(
+                "SELECT aluno_id FROM aluno WHERE aluno_id = :aluno_id FOR UPDATE"
+            );
+            $stmtAluno->execute(['aluno_id' => $aluno_id]);
+            if ($stmtAluno->fetchColumn() === false) {
+                throw new \InvalidArgumentException('Aluno não encontrado.');
+            }
 
             $stmtDup = $this->db->prepare(
                 "SELECT id FROM {$this->table}
@@ -116,6 +124,17 @@ class Reivindicacao extends BaseModel
                 $e = new \PDOException('duplicate key value violates unique constraint "uq_reivindicacao_ativa"');
                 $e->errorInfo = ['23505', null, null];
                 throw $e;
+            }
+
+            $stmtLimite = $this->db->prepare(
+                "SELECT COUNT(*)
+                 FROM {$this->table}
+                 WHERE aluno_id = :aluno_id
+                   AND status_reivindicacao = 'pendente'"
+            );
+            $stmtLimite->execute(['aluno_id' => $aluno_id]);
+            if ((int) $stmtLimite->fetchColumn() >= self::MAX_REIVINDICACOES_PENDENTES_POR_ALUNO) {
+                throw new \DomainException('Você já possui 3 reivindicações pendentes. Aguarde a avaliação de uma delas antes de enviar outra.');
             }
 
             $stmtItem = $this->db->prepare(

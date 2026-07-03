@@ -6,6 +6,8 @@ use Exception;
 use Models\Aluno;
 use Models\Usuario;
 use Core\Database;
+use Core\Mailer;
+use Core\RateLimiter;
 use PDOException;
 use Firebase\JWT\JWT;
 use Core\Request;
@@ -19,6 +21,11 @@ class AuthController
         header('Content-Type: application/json');
 
         $dados = $request->getBody();
+        if (!is_string($dados['email'] ?? null) || (!empty($dados['senha']) && !is_string($dados['senha']))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Tipos de dados inválidos no payload.']);
+            return;
+        }
 
         $recaptchaToken = $dados['recaptcha_token'] ?? '';
         if (empty($recaptchaToken)) {
@@ -26,6 +33,7 @@ class AuthController
             echo json_encode(['error' => 'Verificação de segurança (reCAPTCHA) não realizada.']);
             return;
         }
+
 
         try {
             $recaptchaValido = Recaptcha::verify($recaptchaToken);
@@ -56,7 +64,7 @@ class AuthController
         }
 
         if ($role === 'admin') {
-            http_response_code(403);
+            http_response_code(400);
             echo json_encode(['error' => 'Cadastro público de administradores não é permitido.']);
             return;
         }
@@ -89,6 +97,9 @@ class AuthController
             echo json_encode(['error' => 'Formato de email inválido.']);
             return;
         }
+        $email = strtolower($email);
+
+        RateLimiter::check($this->rateLimitKey($email), 'register', 5, 300);
 
         $nome  = htmlspecialchars(strip_tags($dados['nome']), ENT_QUOTES, 'UTF-8');
         $senha = $dados['senha'];
@@ -113,23 +124,52 @@ class AuthController
         try {
             $pdo->beginTransaction();
 
-            $usuarioId = $usuarioModel->create($nome, $email, $senha, $role);
+            $usuarioExistente = $usuarioModel->findByEmail($email);
+            if ($usuarioExistente && !empty($usuarioExistente['email_verificado_em'])) {
+                throw new \DomainException('Este e-mail já está em uso por uma conta ativa.');
+            }
 
-            if ($role === 'aluno') {
-                $alunoModel = new \Models\Aluno();
-                $alunoModel->create($usuarioId, $matricula);
+            if ($matricula !== null && $usuarioModel->matriculaEmUsoPorContaVerificada($matricula)) {
+                throw new \DomainException('Esta matrícula já está em uso por uma conta ativa.');
+            }
+
+            $usuarioId = $usuarioExistente ? (int) $usuarioExistente['id'] : null;
+            if ($matricula !== null) {
+                $usuarioModel->removerContasNaoVerificadasPorMatricula($matricula, $usuarioId);
+            }
+
+            if ($usuarioId !== null) {
+                $usuarioModel->updatePendingRegistration($usuarioId, $nome, $email, $senha);
+            } else {
+                $usuarioId = $usuarioModel->create($nome, $email, $senha, $role);
+            }
+
+            if ($role === 'aluno' && $matricula !== null) {
+                $usuarioModel->upsertAlunoMatricula($usuarioId, $matricula);
+            }
+
+            $codigo = $usuarioModel->gerarCodigoVerificacao($usuarioId);
+            if (!$this->enviarCodigoAtivacao($email, $nome, $codigo)) {
+                throw new \RuntimeException('Não foi possível enviar o código de ativação. Verifique o email informado e tente novamente.');
             }
 
             $pdo->commit();
 
-
             http_response_code(201);
             echo json_encode([
                 'sucesso'    => true,
-                'mensagem'   => 'Usuário registrado com sucesso.',
+                'mensagem'   => 'Cadastro criado. Enviamos um código para seu email institucional para ativar a conta.',
                 'usuario_id' => $usuarioId,
+                'requires_verification' => true,
+                'email' => $email,
             ]);
 
+        } catch (\DomainException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            http_response_code(409);
+            echo json_encode(['error' => $e->getMessage()]);
         } catch (\PDOException $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -147,7 +187,7 @@ class AuthController
                 $pdo->rollBack();
             }
             error_log('Erro no registro de usuário: ' . $e->getMessage());
-            http_response_code(400);
+            http_response_code(str_contains($e->getMessage(), 'já estão em uso') ? 409 : 400);
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
@@ -157,6 +197,12 @@ class AuthController
         header('Content-Type: application/json');
 
         $dados = $request->getBody();
+
+        if (!is_string($dados['email'] ?? null) || (!empty($dados['senha']) && !is_string($dados['senha']))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Tipos de dados inválidos no payload.']);
+            return;
+        }
 
         $recaptchaToken = $dados['recaptcha_token'] ?? '';
         if (empty($recaptchaToken)) {
@@ -189,6 +235,8 @@ class AuthController
 
         $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
         $senha = $dados['senha'];
+        $rateLimitEmail = $email ? strtolower($email) : strtolower(trim((string) $dados['email']));
+        RateLimiter::check($this->rateLimitKey($rateLimitEmail), 'login', 5, 300);
 
         if (!$email) {
             http_response_code(401);
@@ -205,6 +253,31 @@ class AuthController
             echo json_encode(['error' => 'Credenciais inválidas.']);
             return;
         }
+
+        if ($user['role'] === 'aluno' && empty($user['email_verificado_em'])) {
+            $codigoEnviado = false;
+            if (!$usuarioModel->possuiCodigoAtivacaoValido((int) $user['id'])) {
+                $codigo = $usuarioModel->gerarCodigoVerificacao((int) $user['id']);
+                if (!$this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo)) {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Sua conta precisa ser ativada, mas não foi possível enviar o código agora. Tente novamente em instantes.']);
+                    return;
+                }
+                $codigoEnviado = true;
+            }
+
+            http_response_code(403);
+            echo json_encode([
+                'error' => $codigoEnviado
+                    ? 'Sua conta ainda não está ativa. Enviamos um código para seu email institucional; informe o código para ativar a conta.'
+                    : 'Sua conta ainda não está ativa. Use o código de ativação já enviado para seu email institucional ou solicite reenvio.',
+                'requires_verification' => true,
+                'email' => $user['email'],
+            ]);
+            return;
+        }
+
+        RateLimiter::reset($this->rateLimitKey($email), 'login');
 
         $tempoExpiracao = isset($_ENV['JWT_EXPIRATION']) ? (int) $_ENV['JWT_EXPIRATION'] : 1200;
 
@@ -247,6 +320,101 @@ class AuthController
                 'siap'      => $user['siap'] ?? null,
             ],
         ]);
+    }
+
+    public function verifyEmail(Request $request): void
+    {
+        header('Content-Type: application/json');
+        $dados = $request->getBody();
+
+        if (!is_string($dados['email'] ?? null) || (!empty($dados['senha']) && !is_string($dados['senha']))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Tipos de dados inválidos no payload.']);
+            return;
+        }
+
+        $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
+        if (!$email) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Formato de email inválido.']);
+            return;
+        }
+
+        RateLimiter::check($this->rateLimitKey($email), 'verify-email', 8, 300);
+
+        $usuarioModel = new Usuario();
+        $resultado = $usuarioModel->verificarCodigoEmail($email, (string) $dados['codigo']);
+
+        if (!$resultado['ok']) {
+            http_response_code(400);
+            echo json_encode(['error' => $resultado['error'] ?? 'Código inválido ou expirado.']);
+            return;
+        }
+
+        http_response_code(200);
+        echo json_encode([
+            'sucesso' => true,
+            'mensagem' => 'Conta ativada com sucesso. Agora você já pode fazer login.',
+        ]);
+    }
+
+    public function resendVerification(Request $request): void
+    {
+        header('Content-Type: application/json');
+        $dados = $request->getBody();
+        if (!is_string($dados['email'] ?? null) || (!empty($dados['senha']) && !is_string($dados['senha']))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Tipos de dados inválidos no payload.']);
+            return;
+        }
+
+        $email = filter_var($dados['email'] ?? '', FILTER_VALIDATE_EMAIL);
+        if (!$email) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Informe um email válido.']);
+            return;
+        }
+
+        RateLimiter::check($this->rateLimitKey($email), 'resend-verification', 3, 300);
+
+        $usuarioModel = new Usuario();
+        $user = $usuarioModel->findByEmail($email);
+        if (!$user || !empty($user['email_verificado_em'])) {
+            http_response_code(200);
+            echo json_encode(['sucesso' => true, 'mensagem' => 'Se a conta precisar de ativação, um novo código será enviado.']);
+            return;
+        }
+
+        $codigo = $usuarioModel->gerarCodigoVerificacao((int) $user['id']);
+        if (!$this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo)) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Não foi possível enviar o código agora. Tente novamente em instantes.']);
+            return;
+        }
+
+        http_response_code(200);
+        echo json_encode(['sucesso' => true, 'mensagem' => 'Novo código enviado para seu email institucional.']);
+    }
+
+    private function enviarCodigoAtivacao(string $email, string $nome, string $codigo): bool
+    {
+        $codigoSeguro = htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8');
+        $nomeSeguro = htmlspecialchars($nome, ENT_QUOTES, 'UTF-8');
+
+        $html = "
+            <p>Olá, {$nomeSeguro}.</p>
+            <p>Use o código abaixo para ativar sua conta no Achou UFC:</p>
+            <p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">{$codigoSeguro}</p>
+            <p>O código expira em 15 minutos. Se você não solicitou este cadastro, ignore este email.</p>
+        ";
+
+        return Mailer::enviar($email, $nome, 'Código de ativação - Achou UFC', $html);
+    }
+
+    private function rateLimitKey(string $email): string
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        return $ip . '|' . strtolower($email);
     }
 
     public function logout(Request $request): void

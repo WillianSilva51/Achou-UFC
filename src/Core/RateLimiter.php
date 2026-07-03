@@ -43,6 +43,12 @@ class RateLimiter
     {
         try {
             $pdo  = Database::getConnection();
+            $pdo->exec("CREATE TABLE IF NOT EXISTS rate_limit (
+                chave VARCHAR(64) NOT NULL PRIMARY KEY,
+                tentativas INT NOT NULL DEFAULT 1,
+                expira_em TIMESTAMPTZ NOT NULL
+            )");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rate_limit_expira ON rate_limit (expira_em)");
             $chave = hash('sha256', $ip . '|' . $action); // chave determinística e segura
 
             /*

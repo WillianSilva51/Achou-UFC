@@ -80,6 +80,20 @@
                         <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
                     </form>
 
+                    <form id="form-verificacao" class="text-start d-none mt-3" novalidate>
+                        <input type="hidden" id="verificacao-email" name="email">
+                        <label for="codigo-verificacao" class="form-label">Código de ativação</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                                class="form-control" id="codigo-verificacao" name="codigo" required
+                                placeholder="000000">
+                            <div class="invalid-feedback">Informe o código de 6 dígitos enviado para seu email.</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Ativar conta</button>
+                        <button type="button" id="reenviar-codigo" class="btn btn-link w-100 mt-1">Reenviar código</button>
+                    </form>
+
                     <p class="text-center mt-3">
                         <a href="login.html" class="text-decoration-none">Já tem uma conta? Faça login</a>
                     </p>
@@ -94,7 +108,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="src/js/app.js?v=docker-api-20260701"></script>
-    <script src="src/js/register.js?v=docker-api-20260701"></script>
+    <script src="src/js/register.js?v=docker-api-20260702"></script>
 </body>
 
 </html>

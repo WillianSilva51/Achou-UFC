@@ -20,7 +20,12 @@ class ReivindicacaoController
             return;
         }
 
-        $dados    = $request->getBody();
+        $dados = $request->getBody();
+        if (isset($dados['aluno_id']) && (int) $dados['aluno_id'] !== (int) $usuarioLogado->sub)  {
+            http_response_code(403);
+            echo json_encode(['error' => 'Violação de segurança: aluno_id não pode ser forjado.']);
+            return;
+        }
         if (!isset($dados['item_id']) || !is_int($dados['item_id']) || $dados['item_id'] <= 0) {
             http_response_code(400);
             echo json_encode(['error' => 'O ID do item é obrigatório e deve ser um número inteiro estrito positivo.']);
@@ -56,6 +61,10 @@ class ReivindicacaoController
             http_response_code(400);
             echo json_encode(['error' => $e->getMessage()]);
 
+        } catch (\DomainException $e) {
+            http_response_code(409);
+            echo json_encode(['error' => $e->getMessage()]);
+
         } catch (\Exception $e) {
             error_log('Erro interno (Reivindicação store): ' . $e->getMessage());
             http_response_code(500);
@@ -85,6 +94,12 @@ class ReivindicacaoController
             if (in_array($statusFiltro, ['pendente', 'aprovado', 'recusado'], true)) {
                 $filtros['status_reivindicacao'] = $statusFiltro;
             }
+        }
+
+        if($usuarioLogado->role !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acesso negado.']);
+            return;
         }
 
         if (!empty($query['aluno_id'])) {
@@ -139,7 +154,7 @@ class ReivindicacaoController
         $dados = $request->getBody();
 
         $statusBruto = $dados['status'] ?? $dados['status_reivindicacao'] ?? '';
-        $novo_status = strtolower(htmlspecialchars(strip_tags((string) $statusBruto), ENT_QUOTES, 'UTF-8'));
+        $novo_status = trim(htmlspecialchars(strip_tags((string) $statusBruto), ENT_QUOTES, 'UTF-8'));
 
         
         if (!in_array($novo_status, ['aprovado', 'recusado'], true)) {
@@ -200,5 +215,23 @@ class ReivindicacaoController
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno ao processar a avaliação.']);
         }
+    }
+
+    public function minhas(Request $request): void
+    {
+        header('Content-Type: application/json');
+        $usuarioLogado = AuthMiddleware::handle();
+
+        $query = $request->getQuery();
+        $limit = 100;
+        $offset = 0;
+        
+        $filtros = ['aluno_id' => (int) $usuarioLogado->sub]; 
+        
+        $reivindicacaoModel = new Reivindicacao();
+        $reivindicacoes = $reivindicacaoModel->findAllWithDetails($limit, $offset, $filtros);
+        
+        http_response_code(200);
+        echo json_encode(['sucesso' => true, 'data' => $reivindicacoes]);
     }
 }
