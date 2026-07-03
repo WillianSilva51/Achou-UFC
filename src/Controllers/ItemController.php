@@ -30,8 +30,6 @@ class ItemController
         'imgur.com',
         'placehold.co',
         'picsum.photos',
-        'localhost',
-        '127.0.0.1',
     ];
 
     public function store(Request $request): void
@@ -56,7 +54,7 @@ class ItemController
             }
         }
 
-        if (array_key_exists('foto_base64', $dados) && !is_array($dados['foto_base64'])) {
+        if (array_key_exists('foto_base64', $dados) && $dados['foto_base64'] !== '' && !is_array($dados['foto_base64']))  {
             http_response_code(400);
             echo json_encode(['error' => "O campo 'foto_base64' deve ser um objeto."]);
             return;
@@ -77,6 +75,11 @@ class ItemController
             return;
         }
 
+        if (!$this->validarTamanhoTexto($dados['titulo'], 255, 'título')
+            || !$this->validarTamanhoTexto($dados['descricao'] ?? '', 5000, 'descrição')) {
+            return;
+        }
+
         $titulo = $this->sanitizarTexto($dados['titulo'], 255);
         $descricao = $this->sanitizarTexto($dados['descricao'] ?? '', 5000);
 
@@ -92,13 +95,12 @@ class ItemController
             return;
         }
 
-        $statusRaw = !empty($dados['status'])
-            ? $this->normalizarStatus($dados['status'])
-            : 'disponivel';
+       
+        $statusRaw = isset($dados['status']) ? trim((string)$dados['status']) : 'disponivel';
 
         if (!in_array($statusRaw, self::STATUS_CRIACAO, true)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Status inválido. Use: disponivel ou em_analise.']);
+            echo json_encode(['error' => 'Status inválido ou em maiúsculas. Use estritamente: disponivel ou em_analise.']);
             return;
         }
 
@@ -126,9 +128,10 @@ class ItemController
         }
 
         $data_encontrado = date('Y-m-d');
-        if (isset($dados['data_encontrado']) && trim($dados['data_encontrado']) !== '') {
-            $data_raw = trim($dados['data_encontrado']);
-            $d        = \DateTime::createFromFormat('!Y-m-d', $data_raw);
+        if (array_key_exists('data_encontrado', $dados)) {
+            $data_raw = trim((string) $dados['data_encontrado']);
+            if ($data_raw === '') { http_response_code(400); echo json_encode(['error' => 'Data não pode ser vazia.']); return; }
+            $d = \DateTime::createFromFormat('!Y-m-d', $data_raw);
             if (!$d || $d->format('Y-m-d') !== $data_raw) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Formato de data inválido. Use AAAA-MM-DD.']);
@@ -298,7 +301,7 @@ class ItemController
             }
         }
 
-        if (array_key_exists('foto_base64', $dados) && !is_array($dados['foto_base64'])) {
+        if (array_key_exists('foto_base64', $dados) && $dados['foto_base64'] !== '' && !is_array($dados['foto_base64'])) {
             http_response_code(400);
             echo json_encode(['error' => "O campo 'foto_base64' deve ser um objeto."]);
             return;
@@ -325,6 +328,11 @@ class ItemController
         if (empty($dados['titulo']) || empty($dados['categoria_id']) || empty($dados['local_id'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Título, categoria_id e local_id são obrigatórios.']);
+            return;
+        }
+
+        if (!$this->validarTamanhoTexto($dados['titulo'], 255, 'título')
+            || !$this->validarTamanhoTexto($dados['descricao'] ?? '', 5000, 'descrição')) {
             return;
         }
 
@@ -497,6 +505,8 @@ class ItemController
             return '';
         }
 
+        if (preg_match('/^[oOaCT]:[0-9]+:/', $valor)) return '';
+
         $texto = preg_replace('/\s+/u', ' ', trim(strip_tags($valor))) ?? '';
         $texto = htmlspecialchars($texto, ENT_QUOTES, 'UTF-8');
 
@@ -505,6 +515,23 @@ class ItemController
         }
 
         return $texto;
+    }
+
+    private function validarTamanhoTexto(mixed $valor, int $limite, string $nomeCampo): bool
+    {
+        if (!is_string($valor)) {
+            http_response_code(400);
+            echo json_encode(['error' => "O campo '{$nomeCampo}' deve ser uma string."]);
+            return false;
+        }
+
+        if (mb_strlen($valor) > $limite) {
+            http_response_code(400);
+            echo json_encode(['error' => "O campo '{$nomeCampo}' não pode ter mais de {$limite} caracteres."]);
+            return false;
+        }
+
+        return true;
     }
 
     private function normalizarStatus(mixed $status): string
@@ -555,6 +582,11 @@ class ItemController
         }
 
         if (!$permitido) {
+            return false;
+        }
+
+        $ip = gethostbyname($host);
+        if(filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
             return false;
         }
 

@@ -21,6 +21,11 @@ class AuthController
         header('Content-Type: application/json');
 
         $dados = $request->getBody();
+        if (!is_string($dados['email'] ?? null) || (!empty($dados['senha']) && !is_string($dados['senha']))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Tipos de dados inválidos no payload.']);
+            return;
+        }
 
         $recaptchaToken = $dados['recaptcha_token'] ?? '';
         if (empty($recaptchaToken)) {
@@ -28,6 +33,7 @@ class AuthController
             echo json_encode(['error' => 'Verificação de segurança (reCAPTCHA) não realizada.']);
             return;
         }
+
 
         try {
             $recaptchaValido = Recaptcha::verify($recaptchaToken);
@@ -58,7 +64,7 @@ class AuthController
         }
 
         if ($role === 'admin') {
-            http_response_code(403);
+            http_response_code(400);
             echo json_encode(['error' => 'Cadastro público de administradores não é permitido.']);
             return;
         }
@@ -192,6 +198,12 @@ class AuthController
 
         $dados = $request->getBody();
 
+        if (!is_string($dados['email'] ?? null) || (!empty($dados['senha']) && !is_string($dados['senha']))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Tipos de dados inválidos no payload.']);
+            return;
+        }
+
         $recaptchaToken = $dados['recaptcha_token'] ?? '';
         if (empty($recaptchaToken)) {
             http_response_code(400);
@@ -223,6 +235,8 @@ class AuthController
 
         $email = filter_var($dados['email'], FILTER_VALIDATE_EMAIL);
         $senha = $dados['senha'];
+        $rateLimitEmail = $email ? strtolower($email) : strtolower(trim((string) $dados['email']));
+        RateLimiter::check($this->rateLimitKey($rateLimitEmail), 'login', 5, 300);
 
         if (!$email) {
             http_response_code(401);
@@ -241,21 +255,29 @@ class AuthController
         }
 
         if ($user['role'] === 'aluno' && empty($user['email_verificado_em'])) {
-            $codigo = $usuarioModel->gerarCodigoVerificacao((int) $user['id']);
-            if (!$this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo)) {
-                http_response_code(500);
-                echo json_encode(['error' => 'Sua conta precisa ser ativada, mas não foi possível enviar o código agora. Tente novamente em instantes.']);
-                return;
+            $codigoEnviado = false;
+            if (!$usuarioModel->possuiCodigoAtivacaoValido((int) $user['id'])) {
+                $codigo = $usuarioModel->gerarCodigoVerificacao((int) $user['id']);
+                if (!$this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo)) {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Sua conta precisa ser ativada, mas não foi possível enviar o código agora. Tente novamente em instantes.']);
+                    return;
+                }
+                $codigoEnviado = true;
             }
 
             http_response_code(403);
             echo json_encode([
-                'error' => 'Sua conta ainda não está ativa. Enviamos um código para seu email institucional; informe o código para ativar a conta.',
+                'error' => $codigoEnviado
+                    ? 'Sua conta ainda não está ativa. Enviamos um código para seu email institucional; informe o código para ativar a conta.'
+                    : 'Sua conta ainda não está ativa. Use o código de ativação já enviado para seu email institucional ou solicite reenvio.',
                 'requires_verification' => true,
                 'email' => $user['email'],
             ]);
             return;
         }
+
+        RateLimiter::reset($this->rateLimitKey($email), 'login');
 
         $tempoExpiracao = isset($_ENV['JWT_EXPIRATION']) ? (int) $_ENV['JWT_EXPIRATION'] : 1200;
 
@@ -305,9 +327,9 @@ class AuthController
         header('Content-Type: application/json');
         $dados = $request->getBody();
 
-        if (empty($dados['email']) || empty($dados['codigo'])) {
+        if (!is_string($dados['email'] ?? null) || (!empty($dados['senha']) && !is_string($dados['senha']))) {
             http_response_code(400);
-            echo json_encode(['error' => 'Email e código são obrigatórios.']);
+            echo json_encode(['error' => 'Tipos de dados inválidos no payload.']);
             return;
         }
 
@@ -340,6 +362,11 @@ class AuthController
     {
         header('Content-Type: application/json');
         $dados = $request->getBody();
+        if (!is_string($dados['email'] ?? null) || (!empty($dados['senha']) && !is_string($dados['senha']))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Tipos de dados inválidos no payload.']);
+            return;
+        }
 
         $email = filter_var($dados['email'] ?? '', FILTER_VALIDATE_EMAIL);
         if (!$email) {

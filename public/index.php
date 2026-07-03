@@ -35,6 +35,7 @@ if (!empty($originHeader) && in_array($originHeader, $origensPermitidas, true)) 
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+header_remove('X-Powered-By');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
@@ -63,7 +64,7 @@ use Controllers\ReivindicacaoController;
 $request = new Request($_SERVER, $_GET, $_POST);
 $router  = new Router($request);
 
-// Auth (reCAPTCHA protege register e login; rate limiter removido desses endpoints)
+// Auth
 $router->post('/api/register', [AuthController::class, 'register']);
 $router->post('/api/login',    [AuthController::class, 'login']);
 $router->post('/api/verify-email', [AuthController::class, 'verifyEmail']);
@@ -98,6 +99,7 @@ $router->delete('/api/itens/{id}', [ItemController::class, 'destroy']);
 
 // Reivindicações
 $router->post('/api/reivindicacoes',             [ReivindicacaoController::class, 'store']);
+$router->get('/api/reivindicacoes/minhas',       [ReivindicacaoController::class, 'minhas']);
 $router->get('/api/reivindicacoes',              [ReivindicacaoController::class, 'index']);
 $router->put('/api/reivindicacoes/{id}/status',  [ReivindicacaoController::class, 'updateStatus']);
 

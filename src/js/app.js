@@ -90,14 +90,18 @@ const ICONES_POR_NOME = {
 
 function getAuth() {
     try {
-        localStorage.removeItem(AUTH_KEY);
-
-        const auth = JSON.parse(sessionStorage.getItem(AUTH_KEY) || 'null');
+        const stored = sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY);
+        const auth = JSON.parse(stored || 'null');
         if (!auth) return null;
 
         if (!isValidAuth(auth)) {
             clearAuth();
             return null;
+        }
+
+        if (!sessionStorage.getItem(AUTH_KEY)) {
+            sessionStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+            localStorage.removeItem(AUTH_KEY);
         }
 
         return auth;
@@ -738,7 +742,10 @@ const AchouApi = {
 
     async listarReivindicacoes(filtros = {}) {
         const params = new URLSearchParams({ limit: '100', ...limparFiltros(filtros) });
-        const payload = await apiRequest(`/api/reivindicacoes?${params.toString()}`);
+        const endpoint = authUser()?.role === 'admin'
+            ? `/api/reivindicacoes?${params.toString()}`
+            : '/api/reivindicacoes/minhas';
+        const payload = await apiRequest(endpoint);
         return payload.data || [];
     },
 

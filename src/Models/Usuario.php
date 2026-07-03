@@ -11,6 +11,8 @@ class Usuario extends BaseModel
     private const EMAIL_CODE_TTL_MINUTES = 15;
     private const EMAIL_CODE_MAX_ATTEMPTS = 5;
     private const TOKEN_TYPE_ACTIVATION = 'ativacao_conta';
+    private const DUMMY_HASH = '$2y$12$usdummyhashparaevitartimingXXXXXXXXXXXXXXXXXXXXXXXXX';
+
 
     public function __construct()
     {
@@ -139,7 +141,10 @@ class Usuario extends BaseModel
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$user || !password_verify($senha, $user['senha'])) {
+        $hashValidacao = $user ? $user['senha'] : self::DUMMY_HASH;
+        $ok = password_verify($senha, $hashValidacao);
+        
+        if (!$user || !$ok) {
             return null;
         }
 
@@ -262,6 +267,17 @@ class Usuario extends BaseModel
         ]);
 
         return $codigo;
+    }
+
+    public function possuiCodigoAtivacaoValido(int $id): bool
+    {
+        $token = $this->findTokenAtivo($id, self::TOKEN_TYPE_ACTIVATION);
+        if (!$token) {
+            return false;
+        }
+
+        return (int) $token['tentativas'] < self::EMAIL_CODE_MAX_ATTEMPTS
+            && strtotime($token['expira_em']) >= time();
     }
 
     public function verificarCodigoEmail(string $email, string $codigo): array
