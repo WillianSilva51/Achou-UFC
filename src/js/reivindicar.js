@@ -111,7 +111,7 @@ function buildItemMarkup(item, userState) {
     heading.appendChild(document.createTextNode(' Solicitar retirada'));
 
     const intro = createElement('p', 'text-muted small');
-    intro.textContent = 'Preencha seus dados. A recepção entrará em contato para confirmar e liberar o item.';
+    intro.textContent = 'Preencha seus dados corretamente, eles serão usados para confirmar sua identidade no momento de entrega.';
 
     const form = document.createElement('form');
     form.id = 'form-reiv';
@@ -266,10 +266,7 @@ function buildItemMarkup(item, userState) {
     const feedback = createElement('div', 'alert alert-success mt-3 d-none');
     feedback.id = 'sucesso';
     feedback.appendChild(createElement('i', 'bi bi-check-circle-fill'));
-    feedback.appendChild(document.createTextNode(' Reivindicação registrada! A recepção fará contato em até 2 dias úteis. Protocolo: '));
-    const protocol = document.createElement('strong');
-    protocol.id = 'protocolo';
-    feedback.appendChild(protocol);
+    feedback.appendChild(document.createTextNode(' Reivindicação registrada!'));
 
     const confirmation = createElement('div', 'modal fade');
     confirmation.id = 'confirmacao-reivindicacao';
@@ -351,10 +348,7 @@ function setFeedbackMessage(message, variant, protocol = '') {
     feedback.appendChild(document.createTextNode(' '));
 
     if (variant === 'success') {
-        feedback.appendChild(document.createTextNode('Reivindicação registrada! A recepção fará contato em até 2 dias úteis. Protocolo: '));
-        const strong = document.createElement('strong');
-        strong.textContent = protocol;
-        feedback.appendChild(strong);
+        feedback.appendChild(document.createTextNode('Reivindicação registrada! Você tem apenas 4h para retirar o objeto dos achados e perdidos, caso contrário ele será guardado novamente.'));
     } else {
         feedback.appendChild(document.createTextNode(message));
     }

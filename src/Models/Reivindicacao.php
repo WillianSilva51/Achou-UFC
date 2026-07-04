@@ -126,6 +126,17 @@ class Reivindicacao extends BaseModel
                 throw $e;
             }
 
+            $stmtLimite = $this->db->prepare(
+                "SELECT COUNT(*)
+                 FROM {$this->table}
+                 WHERE aluno_id = :aluno_id
+                   AND status_reivindicacao = 'pendente'"
+            );
+            $stmtLimite->execute(['aluno_id' => $aluno_id]);
+            if ((int) $stmtLimite->fetchColumn() >= self::MAX_REIVINDICACOES_PENDENTES_POR_ALUNO) {
+                throw new \DomainException('Você já possui 3 reivindicações pendentes. Aguarde a avaliação de uma delas antes de enviar outra.');
+            }
+
             $stmtItem = $this->db->prepare(
                 "SELECT status FROM item_perdido WHERE id = :item_id FOR UPDATE"
             );
