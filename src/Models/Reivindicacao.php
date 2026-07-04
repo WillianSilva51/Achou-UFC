@@ -126,17 +126,6 @@ class Reivindicacao extends BaseModel
                 throw $e;
             }
 
-            $stmtLimite = $this->db->prepare(
-                "SELECT COUNT(*)
-                 FROM {$this->table}
-                 WHERE aluno_id = :aluno_id
-                   AND status_reivindicacao = 'pendente'"
-            );
-            $stmtLimite->execute(['aluno_id' => $aluno_id]);
-            if ((int) $stmtLimite->fetchColumn() >= self::MAX_REIVINDICACOES_PENDENTES_POR_ALUNO) {
-                throw new \DomainException('Você já possui 3 reivindicações pendentes. Aguarde a avaliação de uma delas antes de enviar outra.');
-            }
-
             $stmtItem = $this->db->prepare(
                 "SELECT status FROM item_perdido WHERE id = :item_id FOR UPDATE"
             );
@@ -147,10 +136,33 @@ class Reivindicacao extends BaseModel
                 throw new \InvalidArgumentException('Item não encontrado.');
             }
 
-            if (!in_array(strtolower($itemStatus), ['disponível', 'disponivel'], true)) {
+            $itemStatusNormalizado = str_replace('í', 'i', strtolower(trim((string) $itemStatus)));
+            if ($itemStatusNormalizado !== 'disponivel') {
                 throw new \InvalidArgumentException(
                     'Este item não está mais disponível para reivindicação (status atual: ' . $itemStatus . ').'
                 );
+            }
+
+            $stmtItemPendente = $this->db->prepare(
+                "SELECT id FROM {$this->table}
+                 WHERE item_id = :item_id
+                   AND status_reivindicacao = 'pendente'
+                 LIMIT 1"
+            );
+            $stmtItemPendente->execute(['item_id' => $item_id]);
+            if ($stmtItemPendente->fetchColumn() !== false) {
+                throw new \InvalidArgumentException('Este item já está em análise por outra reivindicação.');
+            }
+
+            $stmtLimite = $this->db->prepare(
+                "SELECT COUNT(*)
+                 FROM {$this->table}
+                 WHERE aluno_id = :aluno_id
+                   AND status_reivindicacao = 'pendente'"
+            );
+            $stmtLimite->execute(['aluno_id' => $aluno_id]);
+            if ((int) $stmtLimite->fetchColumn() >= self::MAX_REIVINDICACOES_PENDENTES_POR_ALUNO) {
+                throw new \DomainException('Você já possui 3 reivindicações pendentes. Aguarde a avaliação de uma delas antes de enviar outra.');
             }
 
             $stmtInsert = $this->db->prepare(

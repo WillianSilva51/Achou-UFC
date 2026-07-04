@@ -13,7 +13,7 @@ use Models\Local;
 class ItemController
 {
     private const STATUS_VALIDOS = ['disponivel', 'devolvido', 'arquivado', 'em_analise'];
-    private const STATUS_CRIACAO = ['disponivel', 'em_analise'];
+    private const STATUS_CRIACAO = ['disponivel'];
     private const FOTO_MAX_BYTES = 5242880;
     private const FOTO_MAX_DIMENSION = 8000;
     private const FOTO_MIMES_PERMITIDOS = [
@@ -100,7 +100,7 @@ class ItemController
 
         if (!in_array($statusRaw, self::STATUS_CRIACAO, true)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Status inválido ou em maiúsculas. Use estritamente: disponivel ou em_analise.']);
+            echo json_encode(['error' => 'Status inválido ou em maiúsculas. Use estritamente: disponivel.']);
             return;
         }
 
