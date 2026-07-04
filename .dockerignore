@@ -1,0 +1,14 @@
+.venv/
+.git/
+.idea/
+.agents/
+.codex/
+docs/
+seed.js
+scripts-dev/
+*.md
+.php-cs-fixer.*
+docker/
+.env
+backend.zip
+vendor/
