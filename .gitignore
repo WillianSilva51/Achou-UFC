@@ -175,3 +175,6 @@ testa_banco.php
 .env
 .php-cs-fixer.cache
 *.zip
+src/js/env.js
+Caddyfile
+docker-compose(1).yml
