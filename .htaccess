@@ -16,7 +16,8 @@ RewriteRule ^src/(Controllers|Core|Entity|Middlewares|Models)(/|$) - [F,L]
 RewriteRule ^(vendor|docs|docker|\.git|\.idea|\.venv)(/|$) - [F,L]
 
 # Bloqueia arquivos de configuração/metadados sensíveis
-RewriteRule ^(composer\.(json|lock)|Dockerfile|docker-compose\.yml|README\.md|LICENSE|\.env(\.example)?|\.gitignore|\.php-cs-fixer.*)$ - [F,L]
+RewriteRule ^(composer\.(json|lock)|Dockerfile|Caddyfile|docker-compose.*\.ya?ml|README\.md|LICENSE|\.env(\.example)?|\.gitignore|\.dockerignore|\.php-cs-fixer.*)$ - [F,L]
+RewriteRule \.(bak|backup|dist|ini|log|sql|zip)$ - [F,L]
 
 # Só /api passa pelo front controller
 RewriteRule ^api(/.*)?$ public/index.php [QSA,L]

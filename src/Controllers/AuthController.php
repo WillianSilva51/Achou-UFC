@@ -36,7 +36,7 @@ class AuthController
 
 
         try {
-            $recaptchaValido = Recaptcha::verify($recaptchaToken);
+            $recaptchaValido = Recaptcha::verify($recaptchaToken, 'register');
         } catch (\RuntimeException $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno de configuração de segurança.']);
@@ -212,7 +212,7 @@ class AuthController
         }
 
         try {
-            $recaptchaValido = Recaptcha::verify($recaptchaToken);
+            $recaptchaValido = Recaptcha::verify($recaptchaToken, 'login');
         } catch (\RuntimeException $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Erro interno de configuração de segurança.']);
