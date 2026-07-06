@@ -27,28 +27,28 @@ class AuthController
             return;
         }
 
-        $recaptchaToken = $dados['recaptcha_token'] ?? '';
-        if (empty($recaptchaToken)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Verificação de segurança (reCAPTCHA) não realizada.']);
-            return;
-        }
-
-
-        try {
-            $recaptchaValido = Recaptcha::verify($recaptchaToken, 'register');
-        } catch (\RuntimeException $e) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Erro interno de configuração de segurança.']);
-            error_log('AuthController::register — ' . $e->getMessage());
-            return;
-        }
-
-        if (!$recaptchaValido) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Falha na verificação de segurança. Por favor, tente novamente.']);
-            return;
-        }
+        // reCAPTCHA temporariamente desativado no cadastro.
+        // $recaptchaToken = $dados['recaptcha_token'] ?? '';
+        // if (empty($recaptchaToken)) {
+        //     http_response_code(400);
+        //     echo json_encode(['error' => 'Verificação de segurança (reCAPTCHA) não realizada.']);
+        //     return;
+        // }
+        //
+        // try {
+        //     $recaptchaValido = Recaptcha::verify($recaptchaToken, 'register');
+        // } catch (\RuntimeException $e) {
+        //     http_response_code(500);
+        //     echo json_encode(['error' => 'Erro interno de configuração de segurança.']);
+        //     error_log('AuthController::register — ' . $e->getMessage());
+        //     return;
+        // }
+        //
+        // if (!$recaptchaValido) {
+        //     http_response_code(403);
+        //     echo json_encode(['error' => 'Falha na verificação de segurança. Por favor, tente novamente.']);
+        //     return;
+        // }
 
         if (empty($dados['nome']) || empty($dados['email']) || empty($dados['senha']) || empty($dados['role'])) {
             http_response_code(400);
@@ -149,20 +149,29 @@ class AuthController
             }
 
             $codigo = $usuarioModel->gerarCodigoVerificacao($usuarioId);
-            if (!$this->enviarCodigoAtivacao($email, $nome, $codigo)) {
+            $emailEnviado = $this->enviarCodigoAtivacao($email, $nome, $codigo);
+            if (!$emailEnviado && !$this->isLocalRequest()) {
                 throw new \RuntimeException('Não foi possível enviar o código de ativação. Verifique o email informado e tente novamente.');
             }
 
             $pdo->commit();
 
-            http_response_code(201);
-            echo json_encode([
+            $response = [
                 'sucesso'    => true,
-                'mensagem'   => 'Cadastro criado. Enviamos um código para seu email institucional para ativar a conta.',
+                'mensagem'   => $emailEnviado
+                    ? 'Cadastro criado. Enviamos um código para seu email institucional para ativar a conta.'
+                    : 'Cadastro criado. O SMTP falhou no ambiente local; use o código exibido para ativar a conta.',
                 'usuario_id' => $usuarioId,
                 'requires_verification' => true,
                 'email' => $email,
-            ]);
+            ];
+
+            if (!$emailEnviado) {
+                $response['dev_verification_code'] = $codigo;
+            }
+
+            http_response_code(201);
+            echo json_encode($response);
 
         } catch (\DomainException $e) {
             if ($pdo->inTransaction()) {
@@ -204,28 +213,28 @@ class AuthController
             return;
         }
 
-        $recaptchaToken = $dados['recaptcha_token'] ?? '';
-        if (empty($recaptchaToken)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Verificação de segurança (reCAPTCHA) não realizada.']);
-            return;
-        }
-
-        try {
-            $recaptchaValido = Recaptcha::verify($recaptchaToken, 'login');
-        } catch (\RuntimeException $e) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Erro interno de configuração de segurança.']);
-            error_log('AuthController::login — ' . $e->getMessage());
-            return;
-        }
-
-        if (!$recaptchaValido) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Falha na verificação de segurança. Por favor, tente novamente.']);
-            return;
-        }
-        // ── fim reCAPTCHA ──────────────────────────────────────────────────────
+        // reCAPTCHA temporariamente desativado no login.
+        // $recaptchaToken = $dados['recaptcha_token'] ?? '';
+        // if (empty($recaptchaToken)) {
+        //     http_response_code(400);
+        //     echo json_encode(['error' => 'Verificação de segurança (reCAPTCHA) não realizada.']);
+        //     return;
+        // }
+        //
+        // try {
+        //     $recaptchaValido = Recaptcha::verify($recaptchaToken, 'login');
+        // } catch (\RuntimeException $e) {
+        //     http_response_code(500);
+        //     echo json_encode(['error' => 'Erro interno de configuração de segurança.']);
+        //     error_log('AuthController::login — ' . $e->getMessage());
+        //     return;
+        // }
+        //
+        // if (!$recaptchaValido) {
+        //     http_response_code(403);
+        //     echo json_encode(['error' => 'Falha na verificação de segurança. Por favor, tente novamente.']);
+        //     return;
+        // }
 
         if (empty($dados['email']) || empty($dados['senha'])) {
             http_response_code(400);
@@ -256,24 +265,37 @@ class AuthController
 
         if ($user['role'] === 'aluno' && empty($user['email_verificado_em'])) {
             $codigoEnviado = false;
+            $codigoDev = null;
             if (!$usuarioModel->possuiCodigoAtivacaoValido((int) $user['id'])) {
                 $codigo = $usuarioModel->gerarCodigoVerificacao((int) $user['id']);
-                if (!$this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo)) {
+                $emailEnviado = $this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo);
+                if (!$emailEnviado && !$this->isLocalRequest()) {
                     http_response_code(500);
                     echo json_encode(['error' => 'Sua conta precisa ser ativada, mas não foi possível enviar o código agora. Tente novamente em instantes.']);
                     return;
                 }
-                $codigoEnviado = true;
+                $codigoEnviado = $emailEnviado;
+                if (!$emailEnviado) {
+                    $codigoDev = $codigo;
+                }
             }
 
             http_response_code(403);
-            echo json_encode([
+            $response = [
                 'error' => $codigoEnviado
                     ? 'Sua conta ainda não está ativa. Enviamos um código para seu email institucional; informe o código para ativar a conta.'
-                    : 'Sua conta ainda não está ativa. Use o código de ativação já enviado para seu email institucional ou solicite reenvio.',
+                    : ($codigoDev
+                        ? 'Sua conta ainda não está ativa. O SMTP falhou no ambiente local; use o código exibido para ativar a conta.'
+                        : 'Sua conta ainda não está ativa. Use o código de ativação já enviado para seu email institucional ou solicite reenvio.'),
                 'requires_verification' => true,
                 'email' => $user['email'],
-            ]);
+            ];
+
+            if ($codigoDev) {
+                $response['dev_verification_code'] = $codigoDev;
+            }
+
+            echo json_encode($response);
             return;
         }
 
@@ -386,14 +408,26 @@ class AuthController
         }
 
         $codigo = $usuarioModel->gerarCodigoVerificacao((int) $user['id']);
-        if (!$this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo)) {
+        $emailEnviado = $this->enviarCodigoAtivacao($user['email'], $user['nome'], $codigo);
+        if (!$emailEnviado && !$this->isLocalRequest()) {
             http_response_code(500);
             echo json_encode(['error' => 'Não foi possível enviar o código agora. Tente novamente em instantes.']);
             return;
         }
 
         http_response_code(200);
-        echo json_encode(['sucesso' => true, 'mensagem' => 'Novo código enviado para seu email institucional.']);
+        $response = [
+            'sucesso' => true,
+            'mensagem' => $emailEnviado
+                ? 'Novo código enviado para seu email institucional.'
+                : 'O SMTP falhou no ambiente local; use o código exibido para ativar a conta.',
+        ];
+
+        if (!$emailEnviado) {
+            $response['dev_verification_code'] = $codigo;
+        }
+
+        echo json_encode($response);
     }
 
     private function enviarCodigoAtivacao(string $email, string $nome, string $codigo): bool
@@ -415,6 +449,18 @@ class AuthController
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         return $ip . '|' . strtolower($email);
+    }
+
+    private function isLocalRequest(): bool
+    {
+        $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
+        $remoteAddress = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        return str_starts_with($host, 'localhost')
+            || str_starts_with($host, '127.0.0.1')
+            || str_starts_with($host, '0.0.0.0')
+            || $host === '[::1]'
+            || in_array($remoteAddress, ['127.0.0.1', '::1'], true);
     }
 
     public function logout(Request $request): void

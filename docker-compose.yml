@@ -6,7 +6,7 @@ services:
     container_name: achados_api
     restart: unless-stopped
     ports:
-      - "8000:80"           # acesse em http://localhost:8000
+      - "127.0.0.1:8000:80"
     env_file:
       - .env
     environment:
@@ -20,8 +20,24 @@ services:
         condition: service_healthy
     networks:
       - achados_net
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
-  # ─── HTTPS via Cloudflare Tunnel ─────────────────────────────────────────
+  # ─── HTTPS via Cloudflare Tunnel (Quick Tunnel) ──────────────────────────
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: achados_cloudflared
@@ -31,10 +47,19 @@ services:
       - api
     networks:
       - achados_net
+    mem_limit: 128m
+    cpus: 0.5
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # ─── PostgreSQL ───────────────────────────────────────────────────────────
   db:
-    image: postgres:16-alpine   # Alpine = imagem menor (~80 MB)
+    image: postgres:16-alpine  
     container_name: achados_db
     restart: unless-stopped
     environment:
@@ -42,8 +67,8 @@ services:
       POSTGRES_USER:     ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
     volumes:
-      - postgres_data:/var/lib/postgresql/data     # dados persistem entre restarts
-      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:Z  # cria as tabelas na 1ª vez
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:Z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -51,6 +76,16 @@ services:
       retries: 10
     networks:
       - achados_net
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data:

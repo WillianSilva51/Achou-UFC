@@ -40,7 +40,9 @@ formLogin.addEventListener('submit', async (event) => {
         const next = new URLSearchParams(location.search).get('next');
         location.href = safeRedirectTarget(next, authUser()?.role === 'admin' ? 'admin.html' : 'vitrine.html');
     } catch (error) {
-        erroLogin.textContent = error.message;
+        erroLogin.textContent = error.payload?.dev_verification_code
+            ? `${error.message} Código: ${error.payload.dev_verification_code}`
+            : error.message;
         erroLogin.className = 'alert alert-danger small py-2';
         if (error.payload?.requires_verification && error.payload?.email) {
             loginVerificacaoEmail.value = error.payload.email;
@@ -85,7 +87,9 @@ loginReenviarCodigo.addEventListener('click', async () => {
     loginReenviarCodigo.disabled = true;
     try {
         const response = await AchouApi.resendVerification(loginVerificacaoEmail.value);
-        erroLogin.textContent = response.mensagem || 'Novo código enviado para seu email institucional.';
+        erroLogin.textContent = response.dev_verification_code
+            ? `${response.mensagem} Código: ${response.dev_verification_code}`
+            : response.mensagem || 'Novo código enviado para seu email institucional.';
         erroLogin.className = 'alert alert-success small py-2';
     } catch (error) {
         erroLogin.textContent = error.message;

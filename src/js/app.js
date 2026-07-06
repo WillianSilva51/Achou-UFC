@@ -456,50 +456,51 @@ function safeRedirectTarget(target, fallback = 'auth_hub.html') {
     }
 }
 
-function recaptchaSiteKey() {
-    const siteKey = String(ENV.RECAPTCHA_SITE_KEY || '').trim();
-    if (!siteKey || siteKey === RECAPTCHA_PLACEHOLDER) return '';
-    return siteKey;
-}
-
-function injetarRecaptcha(siteKey = recaptchaSiteKey()) {
-    if (window.grecaptcha?.execute) {
-        return Promise.resolve(window.grecaptcha);
-    }
-
-    if (recaptchaScriptPromise) {
-        return recaptchaScriptPromise;
-    }
-
-    recaptchaScriptPromise = new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
-        script.async = true;
-        script.defer = true;
-        script.referrerPolicy = 'strict-origin-when-cross-origin';
-        script.onload = () => resolve(window.grecaptcha);
-        script.onerror = () => reject(apiError('Nao foi possivel carregar a verificacao de seguranca.', 0));
-        document.head.appendChild(script);
-    });
-
-    return recaptchaScriptPromise;
-}
-
-async function recaptchaToken(action = 'submit') {
-    const siteKey = recaptchaSiteKey();
-    if (!siteKey) {
-        return 'local-dev-token';
-    }
-
-    const grecaptcha = await injetarRecaptcha(siteKey);
-    return new Promise((resolve, reject) => {
-        grecaptcha.ready(() => {
-            grecaptcha.execute(siteKey, { action })
-                .then(resolve)
-                .catch(() => reject(apiError('Falha na verificacao de seguranca. Tente novamente.', 0)));
-        });
-    });
-}
+// reCAPTCHA temporariamente desativado no frontend.
+// function recaptchaSiteKey() {
+//     const siteKey = String(ENV.RECAPTCHA_SITE_KEY || '').trim();
+//     if (!siteKey || siteKey === RECAPTCHA_PLACEHOLDER) return '';
+//     return siteKey;
+// }
+//
+// function injetarRecaptcha(siteKey = recaptchaSiteKey()) {
+//     if (window.grecaptcha?.execute) {
+//         return Promise.resolve(window.grecaptcha);
+//     }
+//
+//     if (recaptchaScriptPromise) {
+//         return recaptchaScriptPromise;
+//     }
+//
+//     recaptchaScriptPromise = new Promise((resolve, reject) => {
+//         const script = document.createElement('script');
+//         script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+//         script.async = true;
+//         script.defer = true;
+//         script.referrerPolicy = 'strict-origin-when-cross-origin';
+//         script.onload = () => resolve(window.grecaptcha);
+//         script.onerror = () => reject(apiError('Nao foi possivel carregar a verificacao de seguranca.', 0));
+//         document.head.appendChild(script);
+//     });
+//
+//     return recaptchaScriptPromise;
+// }
+//
+// async function recaptchaToken(action = 'submit') {
+//     const siteKey = recaptchaSiteKey();
+//     if (!siteKey) {
+//         return 'local-dev-token';
+//     }
+//
+//     const grecaptcha = await injetarRecaptcha(siteKey);
+//     return new Promise((resolve, reject) => {
+//         grecaptcha.ready(() => {
+//             grecaptcha.execute(siteKey, { action })
+//                 .then(resolve)
+//                 .catch(() => reject(apiError('Falha na verificacao de seguranca. Tente novamente.', 0)));
+//         });
+//     });
+// }
 
 function detectApiBaseUrl() {
     const localFrontendPorts = ['3000', '3001', '5000', '5173', '5500', '5501'];
@@ -670,7 +671,7 @@ const AchouApi = {
             body: {
                 email: dados.email,
                 senha: dados.senha || dados.password,
-                recaptcha_token: dados.recaptcha_token || await recaptchaToken('login')
+                // recaptcha_token: dados.recaptcha_token || await recaptchaToken('login')
             }
         });
         setAuth({ token: payload.token, usuario: payload.usuario });
@@ -682,7 +683,7 @@ const AchouApi = {
             method: 'POST',
             body: {
                 ...dados,
-                recaptcha_token: dados.recaptcha_token || await recaptchaToken('register')
+                // recaptcha_token: dados.recaptcha_token || await recaptchaToken('register')
             }
         });
     },

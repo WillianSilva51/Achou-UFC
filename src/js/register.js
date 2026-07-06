@@ -92,7 +92,9 @@ formRegister.addEventListener('submit', async (event) => {
         verificacaoEmail.value = email;
         formVerificacao.classList.remove('d-none');
         codigoVerificacao.focus();
-        alertaRegistro.textContent = 'Cadastro criado. Enviamos um código para seu email institucional. Informe o código para ativar a conta.';
+        alertaRegistro.textContent = response.dev_verification_code
+            ? `${response.mensagem} Código: ${response.dev_verification_code}`
+            : 'Cadastro criado. Enviamos um código para seu email institucional. Informe o código para ativar a conta.';
         alertaRegistro.className = 'alert alert-success small py-2';
         formRegister.reset();
         formRegister.classList.remove('was-validated');
@@ -152,7 +154,9 @@ reenviarCodigo.addEventListener('click', async () => {
     );
     try {
         const response = await AchouApi.resendVerification(verificacaoEmail.value);
-        alertaRegistro.textContent = response.mensagem || 'Novo código enviado para seu email institucional.';
+        alertaRegistro.textContent = response.dev_verification_code
+            ? `${response.mensagem} Código: ${response.dev_verification_code}`
+            : response.mensagem || 'Novo código enviado para seu email institucional.';
         alertaRegistro.className = 'alert alert-success small py-2';
     } catch (error) {
         alertaRegistro.textContent = error.message;
